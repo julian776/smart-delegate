@@ -41,19 +41,32 @@ The skill instructs Claude to spawn subagents when work is:
 
 ## Installation
 
-### As a Claude Code plugin
+### Step 1: Add the marketplace
 
-```bash
-claude plugins add julian776/smart-delegate --scope user
+From within Claude Code, add this repository as a plugin marketplace:
+
+```
+/plugin marketplace add julian776/smart-delegate
 ```
 
-### Manual
+### Step 2: Install the plugin
 
-Clone the repo into your plugins or reference it from your Claude Code configuration:
+```
+/plugin install smart-delegate@julian776-smart-delegate
+```
+
+Choose your preferred scope when prompted:
+- **User** (recommended) — applies across all your projects
+- **Project** — shared with collaborators via `.claude/settings.json`
+- **Local** — just you, just this repo
+
+### Alternative: Local development
+
+Clone and load directly with `--plugin-dir` (useful for testing or customization):
 
 ```bash
 git clone https://github.com/julian776/smart-delegate.git
-claude plugins add ./smart-delegate --scope user
+claude --plugin-dir ./smart-delegate
 ```
 
 ## Usage
@@ -67,7 +80,7 @@ The skill auto-triggers when Claude is about to:
 You can also invoke it explicitly:
 
 ```
-/smart-delegate
+/smart-delegate:smart-delegate
 ```
 
 ## Routing Examples

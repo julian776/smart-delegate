@@ -1,7 +1,11 @@
 {
   "name": "smart-delegate",
   "description": "Quality-first subagent delegation. Routes tasks to the cheapest model that reliably handles them, spawns subagents for parallel work, and biases upward when uncertain.",
+  "version": "1.0.0",
   "author": {
-    "name": "julian776"
-  }
+    "name": "julian776",
+    "url": "https://github.com/julian776"
+  },
+  "repository": "https://github.com/julian776/smart-delegate",
+  "license": "MIT"
 }

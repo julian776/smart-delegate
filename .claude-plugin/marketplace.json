@@ -1,0 +1,13 @@
+{
+  "name": "julian776-smart-delegate",
+  "owner": {
+    "name": "julian776"
+  },
+  "plugins": [
+    {
+      "name": "smart-delegate",
+      "source": ".",
+      "description": "Quality-first subagent delegation. Routes tasks to the cheapest model that reliably handles them, spawns subagents for parallel work, and biases upward when uncertain."
+    }
+  ]
+}
