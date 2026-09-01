@@ -1,5 +1,5 @@
 # Bundled provider-agnostic defaults. Every field is optional. Copy this file
-# to .smart-delegate/models.yaml to customize it for a project.
+# to .smart-delegate/config.yaml to customize the plugin for a project.
 models:
   - title: Mechanical
     priority: 10

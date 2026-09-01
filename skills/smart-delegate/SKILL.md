@@ -16,9 +16,9 @@ option when uncertain.
 
 Whenever this skill activates, look for a model profile configuration in this order:
 
-1. `.smart-delegate/models.yaml` in the current project
-2. `~/.config/smart-delegate/models.yaml`
-3. [models.yaml](models.yaml), the bundled defaults
+1. `.smart-delegate/config.yaml` in the current project
+2. `~/.config/smart-delegate/config.yaml`
+3. [config.yaml](config.yaml), the bundled defaults
 
 If a file exists, read it automatically and use the first one found; do not merge files. Inject its
 relevant preferences and invocation guidance into every delegated assignment. Do not require the

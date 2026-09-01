@@ -33,9 +33,9 @@ Every task gets matched to a semantic capability profile. The bundled defaults a
 
 The skill does not assume Claude, OpenAI, or any other provider. Unless configuration supplies invocation instructions, the agent chooses an appropriate model and delegation tool available in its current environment.
 
-### Shared Configuration
+### Configuration
 
-Smart Delegate and Coordinator use the same optional configuration file. Create `.smart-delegate/models.yaml` in a project, or `~/.config/smart-delegate/models.yaml` for user-wide preferences. The plugin detects the first available file automatically and injects its relevant preferences and invocation guidance into delegated assignments:
+Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. The plugin detects the first available file automatically and injects its relevant routing, review, QA, and invocation guidance into delegated assignments:
 
 ```yaml
 models:
@@ -220,12 +220,12 @@ smart-delegate/
     │   └── SKILL.md          # Orchestration and observation loop
     └── smart-delegate/
         ├── SKILL.md          # Provider-agnostic routing rules
-        └── models.yaml       # Bundled default profiles
+        └── config.yaml       # Shared routing, review, QA, and invocation config
 ```
 
 ## Contributing
 
-The profiles in `skills/smart-delegate/models.yaml` are the most opinionated part. If you find a task class that's consistently misrouted, open an issue or PR with:
+The profiles in `skills/smart-delegate/config.yaml` are the most opinionated part. If you find a task class that's consistently misrouted, open an issue or PR with:
 
 1. The task description
 2. Which profile it was routed to
