@@ -1,13 +1,13 @@
 # Smart Delegate
 
-A Claude Code skill that optimizes token costs through **intelligent subagent delegation** — not by compressing output or dumbing down responses, but by routing each task to the right model tier and parallelizing work.
+A provider-agnostic skill that optimizes token costs through **intelligent subagent delegation** — not by compressing output or dumbing down responses, but by routing each task to the right capability profile and parallelizing work.
 
 ## Philosophy
 
 Most token-saving tools cut corners: shorter responses, smaller models everywhere, fewer tool calls. Smart Delegate takes the opposite approach — **spend tokens wisely, not fewer tokens blindly**.
 
-- A wrong answer from Haiku costs more in rework than using Sonnet would have
-- A Sonnet attempt at architecture review wastes time when Opus gets it right the first try
+- A wrong answer from a lightweight model costs more in rework than using a stronger model would have
+- A general-purpose model can waste time on architecture review when a deeper reasoner gets it right the first try
 - 10 files read into main context costs more than one focused subagent reading all 10
 
 The savings come from **delegation efficiency**: parallel execution, context isolation, and matching model capability to task complexity.
@@ -16,23 +16,44 @@ The savings come from **delegation efficiency**: parallel execution, context iso
 
 ### Model Routing
 
-Every task Claude encounters gets classified into one of three tiers:
+Every task gets matched to a semantic capability profile. The bundled defaults are:
 
-| Tier | Model | When to use |
-|------|-------|-------------|
-| **T1** | Haiku | Mechanical tasks with a single clear answer — file lookups, greps, format conversion, boilerplate |
-| **T2** | Sonnet | Tasks requiring reasoning within clear boundaries — code review, bug diagnosis, test writing, exploration |
-| **T3** | Opus | Tasks requiring judgment under ambiguity — architecture design, security review, complex refactoring |
+| Profile | When to use |
+|---------|-------------|
+| **Mechanical** | Tasks with a single clear answer — file lookups, searches, format conversion, boilerplate |
+| **General reasoning** | Tasks requiring reasoning within clear boundaries — code review, bug diagnosis, test writing, exploration |
+| **Deep judgment** | Tasks requiring judgment under ambiguity — architecture design, security review, complex refactoring |
+
+The skill does not assume Claude, OpenAI, or any other provider. Unless configuration supplies invocation instructions, the agent chooses an appropriate model and delegation tool available in its current environment.
+
+### Custom Model Profiles
+
+Optionally create `.smart-delegate/models.yaml` in a project, or `~/.config/smart-delegate/models.yaml` for user-wide preferences. The skill detects the first available file automatically and injects its relevant preferences and invocation guidance into delegated assignments:
+
+```yaml
+models:
+  - title: Fast local model
+    priority: 10
+    description: Use for private, mechanical tasks that fit in a small context.
+    invocation: |
+      Run `my-agent --model local-fast` and pass the assignment on stdin.
+
+  - title: Best available reasoner
+    priority: 20
+    description: Use for ambiguous, high-impact work where quality matters most.
+```
+
+The file itself and every field are optional. A profile can contain only the information you want to override. Empty entries are ignored. Lower priority numbers express a preference among equally suitable profiles; capability still wins when a task requires it. Free-form invocation instructions allow profiles to use another agent API, CLI, or tool without baking that provider into the skill. Without a configuration file, the agent chooses from the models and tools available in its environment.
 
 ### The Upgrade Rule
 
 > **When in doubt between two tiers, always use the higher one.**
 
-This is the core principle. The cost difference between model tiers is small compared to the cost of re-doing work because a cheaper model gave a wrong or shallow answer.
+This is the core principle. The cost difference between capability profiles is small compared to the cost of re-doing work because a cheaper model gave a wrong or shallow answer.
 
 ### Subagent Spawning
 
-The skill instructs Claude to spawn subagents when work is:
+The skill instructs the host agent to delegate when work is:
 
 - **Parallelizable** — multiple independent tasks get spawned simultaneously
 - **Exploratory** — reading 3+ files to answer a question
@@ -71,7 +92,7 @@ claude --plugin-dir ./smart-delegate
 
 ## Usage
 
-The skill auto-triggers when Claude is about to:
+The skill auto-triggers when the host agent is about to:
 - Explore multiple files across a codebase
 - Run code reviews
 - Perform research tasks
@@ -85,19 +106,19 @@ You can also invoke it explicitly:
 
 ## Routing Examples
 
-### Haiku gets these right every time
+### Mechanical profile
 - "Find all files matching `*.test.ts`"
 - "Search for `DatabaseConnection` in the codebase"
 - "Extract all environment variables from this config"
 - "Convert this JSON schema to TypeScript types"
 
-### Sonnet is the workhorse
+### General reasoning profile
 - "How does the authentication middleware work?"
 - "Review this PR for code quality issues"
 - "Write unit tests for the `UserService` class"
 - "Why does the build fail when running on CI?"
 
-### Opus is for when it matters
+### Deep judgment profile
 - "Design the data model for the new billing system"
 - "Is this migration safe under concurrent writes?"
 - "What's the best approach to decompose this monolith?"
@@ -124,19 +145,20 @@ Smart Delegate **stacks** with compression tools. Use Caveman for output style +
 ```
 smart-delegate/
 ├── .claude-plugin/
-│   └── plugin.json          # Plugin manifest
+│   └── plugin.json          # Claude Code plugin manifest
 └── skills/
     └── smart-delegate/
-        └── SKILL.md          # Skill definition with routing rules
+        ├── SKILL.md          # Provider-agnostic routing rules
+        └── models.yaml       # Bundled default profiles
 ```
 
 ## Contributing
 
-The routing table in `skills/smart-delegate/SKILL.md` is the most opinionated part. If you find a task class that's consistently misrouted, open an issue or PR with:
+The profiles in `skills/smart-delegate/models.yaml` are the most opinionated part. If you find a task class that's consistently misrouted, open an issue or PR with:
 
 1. The task description
-2. Which tier it was routed to
-3. Which tier actually handled it well
+2. Which profile it was routed to
+3. Which profile actually handled it well
 4. Why (what about the task made it harder/easier than expected)
 
 ## License

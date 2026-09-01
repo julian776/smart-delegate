@@ -1,5 +1,6 @@
 {
   "name": "julian776-smart-delegate",
+  "description": "Provider-agnostic, quality-first model routing and subagent delegation.",
   "owner": {
     "name": "julian776"
   },

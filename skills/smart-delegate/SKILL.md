@@ -1,110 +1,83 @@
 ---
 name: smart-delegate
 description: >
-  Quality-first subagent delegation. Routes tasks to the cheapest model that reliably handles them,
-  spawns subagents for parallelizable work, and biases upward when uncertain.
-  Auto-triggers when Claude is about to do multi-file exploration, run reviews, perform research,
-  or handle tasks that would benefit from parallel agents. Also triggers on "delegate", "use agents",
-  "smart delegate", "/smart-delegate".
+  Quality-first delegation that routes independent work to suitable agents or models without
+  assuming a particular provider. Use for multi-file exploration, reviews, research, parallel
+  work, or when the user asks to delegate or use agents.
 ---
 
-# Smart Delegate — Quality-First Subagent Routing
+# Smart Delegate
 
-Spawn subagents aggressively. Pick the cheapest model that **reliably** handles the task. When uncertain, always go one tier up.
+Delegate focused work when doing so improves quality, speed, or context isolation. Select the
+least expensive available model that can reliably complete each task, and prefer the more capable
+option when uncertain.
 
-## Model Tiers
+## Inject routing preferences automatically
 
-| Tier | Model | Cost | Use when |
-|------|-------|------|----------|
-| **T1** | `haiku` | Lowest | Task has a single, clear answer. No judgment calls. |
-| **T2** | `sonnet` | Mid | Task requires reasoning, synthesis, or multi-step logic. |
-| **T3** | `opus` | Highest | Task requires deep architectural reasoning, ambiguous tradeoffs, or creative problem-solving. |
+Whenever this skill activates, look for a model profile configuration in this order:
 
-## The Upgrade Rule
+1. `.smart-delegate/models.yaml` in the current project
+2. `~/.config/smart-delegate/models.yaml`
+3. [models.yaml](models.yaml), the bundled defaults
 
-> **In doubt between T1 and T2 → use T2. In doubt between T2 and T3 → use T3.**
->
-> A wrong answer at a cheaper tier costs more than the right answer at the next tier up.
-> Re-work from a bad subagent wastes far more tokens than the delta between models.
+If a file exists, read it automatically and use the first one found; do not merge files. Inject its
+relevant preferences and invocation guidance into every delegated assignment. Do not require the
+user to mention or paste the configuration. If no file exists, route using the available models and
+tools without configuration.
 
-## Task → Model Routing Table
+A configuration may contain an ordered `models` list:
 
-### Haiku (T1) — Mechanical, well-scoped tasks
-
-- **File lookup / glob**: "Find files matching X pattern"
-- **Simple grep**: "Search for symbol X in the codebase"
-- **Format conversion**: "Convert this JSON to YAML"
-- **Boilerplate generation**: Repetitive code from a clear template
-- **Syntax checks**: "Does this file parse correctly?"
-- **Extracting data**: "Pull all import statements from these files"
-- **Simple Q&A**: "What's the default port for X?"
-
-### Sonnet (T2) — Reasoning with clear boundaries
-
-- **Code exploration**: "How does module X work?" (Explore agent)
-- **Code review**: Lint, naming, error handling, style checks
-- **Test writing**: Unit tests for well-defined functions
-- **Bug diagnosis**: "Why does X fail when Y?"
-- **Refactoring**: Rename, extract method, reorganize — when scope is clear
-- **Documentation**: Summarize what code does
-- **Research**: Web search + synthesis of results
-- **Implementation**: Feature work with a clear spec/plan
-
-### Opus (T3) — Judgment, ambiguity, architecture
-
-- **Architecture design**: System design, tradeoff analysis
-- **Plan review**: Evaluating whether a plan is complete and sound
-- **Ambiguous bugs**: Unclear repro, multiple possible causes
-- **Security review**: Threat modeling, subtle vulnerability detection
-- **Complex refactoring**: Cross-cutting changes affecting multiple systems
-- **Creative problem-solving**: "What's the best approach to X?" with no clear answer
-- **Final verification**: When the stakes are high and correctness matters most
-
-## When to Spawn Subagents
-
-Spawn a subagent instead of doing the work inline when **any** of these apply:
-
-1. **Parallelizable**: Two or more independent tasks exist → spawn all in parallel
-2. **Exploratory**: You need to read 3+ files to answer a question → Explore agent
-3. **Reviewable**: Code needs review from a specific angle → dedicated review agent
-4. **Context-preserving**: The work would pollute main context with noise (large search results, verbose outputs)
-5. **Isolatable**: The task has clear inputs and outputs, doesn't need main conversation state
-
-**Do NOT spawn a subagent when:**
-- The task takes <30 seconds inline
-- You need the result immediately and there's nothing else to do in parallel
-- The task requires back-and-forth with the user
-- You already have the answer from context
-
-## Parallel Spawning Rules
-
-When multiple independent subagents are needed, **always spawn them in a single message** (one message, multiple Agent tool calls). Never spawn sequentially when parallel is possible.
-
-Example — exploring a codebase:
-```
-Agent(model: "haiku", "Find all API route files")
-Agent(model: "haiku", "Find all database migration files")  
-Agent(model: "sonnet", "How does the auth middleware work?")
-```
-All three in one message. Haiku for the lookups, Sonnet for the reasoning.
-
-## Decision Flowchart
-
-```
-Is the task mechanical with a single clear answer?
-├── Yes → Haiku
-├── Unsure → Sonnet (upgrade rule)
-└── No →
-    Does it require reasoning within clear boundaries?
-    ├── Yes → Sonnet
-    ├── Unsure → Opus (upgrade rule)
-    └── No → Opus
+```yaml
+models:
+  - title: Focused worker
+    priority: 10
+    description: Use for bounded implementation, investigation, and synthesis.
+    invocation: |
+      Optional instructions for invoking a particular agent, model, CLI, or external tool.
 ```
 
-## Anti-Patterns
+- Every field is optional. Ignore empty entries and unknown fields that cannot inform routing.
+- `title` is a human-readable label; it does not need to match a provider's model identifier.
+- `description` explains when the profile should be selected. Infer suitability from the other
+  fields and current environment when it is absent.
+- `priority` uses lower numbers when multiple profiles are equally suitable.
+  Profiles without a priority retain file order after profiles with an explicit priority.
+- `invocation` is free-form guidance. When present, include it in the delegated assignment and
+  follow it to invoke that profile.
+- Additional fields may provide hints, but must not be required for routing.
 
-- **Haiku for exploration**: Haiku can grep, but it can't synthesize across files well. Use Sonnet for Explore agents.
-- **Opus for everything**: Wastes budget on tasks Sonnet handles perfectly. Save Opus for where judgment matters.
-- **Sequential when parallel**: If tasks are independent, spawn them together. The wall-clock time savings alone justify it.
-- **Skipping subagents to "save tokens"**: A focused subagent that reads 10 files costs less than polluting main context with 10 file reads.
-- **Downgrading under pressure**: When the user says "this is important", that's a signal to go UP a tier, not down.
+Treat descriptions as selection guidance, not keyword rules. If no invocation is provided, choose
+an available provider, model, agent type, and invocation mechanism based on the task and current
+environment. Never invent an unavailable model or tool. If a configured invocation cannot be used,
+select the next suitable profile or use the environment's normal delegation mechanism.
+
+## Decide when to delegate
+
+Delegate when at least one of these applies:
+
+- Two or more independent tasks can run in parallel.
+- Exploration requires reading several files or sources and returning a synthesis.
+- A focused review benefits from an isolated context.
+- The task has clear inputs and outputs and does not need user interaction.
+
+Work inline when delegation overhead exceeds the likely benefit, the result is needed before any
+other work can proceed, or the task requires user dialogue.
+
+When several independent tasks exist, launch them together when the environment supports it. Give
+each delegate a bounded assignment and ask for conclusions or artifacts rather than raw context.
+
+## Route work
+
+Compare the task against any configured profile information. Consider ambiguity, breadth, required
+judgment, risk, and the cost of a weak answer. Choose the lowest-cost profile that is clearly
+capable. If uncertain between candidates, choose the more capable one even when its priority is
+lower.
+
+Typical routing signals:
+
+- Mechanical lookups and transformations need little judgment.
+- Bounded implementation, diagnosis, review, and synthesis need general reasoning.
+- Architecture, security, ambiguous tradeoffs, and high-stakes verification need deeper judgment.
+
+Configuration expresses user preferences but does not override availability, safety constraints,
+or explicit instructions in the current request.

@@ -1,0 +1,20 @@
+# Bundled provider-agnostic defaults. Every field is optional. Copy this file
+# to .smart-delegate/models.yaml to customize it for a project.
+models:
+  - title: Mechanical
+    priority: 10
+    description: >
+      Use for deterministic, narrowly scoped work with a single clear answer, such as file
+      discovery, exact searches, extraction, format conversion, and repetitive boilerplate.
+
+  - title: General reasoning
+    priority: 20
+    description: >
+      Use for bounded work requiring reasoning or synthesis, such as code exploration, diagnosis,
+      implementation from a clear specification, tests, documentation, and routine review.
+
+  - title: Deep judgment
+    priority: 30
+    description: >
+      Use for ambiguous or high-impact work requiring strong judgment, such as architecture,
+      security analysis, cross-cutting refactors, subtle tradeoffs, and final verification.
