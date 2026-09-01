@@ -1,6 +1,6 @@
 {
   "name": "julian776-smart-delegate",
-  "description": "Provider-agnostic, quality-first model routing and subagent delegation.",
+  "description": "Provider-agnostic model routing and coordinated multi-agent delegation.",
   "owner": {
     "name": "julian776"
   },
@@ -8,7 +8,7 @@
     {
       "name": "smart-delegate",
       "source": "./",
-      "description": "Quality-first subagent delegation. Routes tasks to the cheapest model that reliably handles them, spawns subagents for parallel work, and biases upward when uncertain."
+      "description": "Provider-agnostic model routing and coordinated multi-agent delegation."
     }
   ]
 }

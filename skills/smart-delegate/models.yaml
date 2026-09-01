@@ -18,3 +18,32 @@ models:
     description: >
       Use for ambiguous or high-impact work requiring strong judgment, such as architecture,
       security analysis, cross-cutting refactors, subtle tradeoffs, and final verification.
+
+# Optional post-change stages. Uncomment either section to enable it. Both
+# skills read these sections from this same file; no per-skill config is needed.
+# Every parameter is optional, so `review: {}` and `qa: {}` are valid.
+# review:
+#   enabled: true
+#   description: |
+#     Review completed changes for correctness and regressions.
+#     Include maintainability findings supported by evidence.
+#   invocation: |
+#     Invoke the configured reviewer with the completed diff.
+#     Request prioritized findings with file references.
+#
+# qa:
+#   enabled: true
+#   description: |
+#     Exercise changed behavior.
+#     Verify every acceptance criterion independently.
+#   invocation: |
+#     Run the configured QA tool against the changed behavior.
+#     Preserve commands, results, and failure evidence.
+
+# For complex invocation logic, reference a script instead of embedding many
+# shell commands here. Explain its path, inputs, outputs, and failure behavior:
+# review:
+#   invocation: |
+#     Run `.smart-delegate/scripts/review.sh` from the project root.
+#     Pass the assignment on stdin. Read JSON findings from stdout.
+#     A nonzero exit means the review could not complete; report stderr.

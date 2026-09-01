@@ -1,6 +1,13 @@
 # Smart Delegate
 
-A provider-agnostic skill that optimizes token costs through **intelligent subagent delegation** — not by compressing output or dumbing down responses, but by routing each task to the right capability profile and parallelizing work.
+A provider-agnostic plugin for **intelligent multi-agent coordination**. Its two skills separate orchestration from model selection: Coordinator owns the outcome, while Smart Delegate routes each assignment to the right capability profile.
+
+## Skills
+
+- **Coordinator** decomposes work, delegates independent assignments, observes results, recovers from failures, and synthesizes a verified outcome.
+- **Smart Delegate** selects a suitable configured profile, model, and invocation mechanism for each assignment.
+
+Use Coordinator for multi-step or multi-agent work. It automatically applies Smart Delegate when choosing how each assignment should run.
 
 ## Philosophy
 
@@ -26,24 +33,85 @@ Every task gets matched to a semantic capability profile. The bundled defaults a
 
 The skill does not assume Claude, OpenAI, or any other provider. Unless configuration supplies invocation instructions, the agent chooses an appropriate model and delegation tool available in its current environment.
 
-### Custom Model Profiles
+### Shared Configuration
 
-Optionally create `.smart-delegate/models.yaml` in a project, or `~/.config/smart-delegate/models.yaml` for user-wide preferences. The skill detects the first available file automatically and injects its relevant preferences and invocation guidance into delegated assignments:
+Smart Delegate and Coordinator use the same optional configuration file. Create `.smart-delegate/models.yaml` in a project, or `~/.config/smart-delegate/models.yaml` for user-wide preferences. The plugin detects the first available file automatically and injects its relevant preferences and invocation guidance into delegated assignments:
 
 ```yaml
 models:
   - title: Fast local model
     priority: 10
-    description: Use for private, mechanical tasks that fit in a small context.
+    description: |
+      Use for private, mechanical tasks.
+      Prefer work that fits in a small context.
     invocation: |
-      Run `my-agent --model local-fast` and pass the assignment on stdin.
+      Run `my-agent --model local-fast`.
+      Pass the complete assignment on stdin.
 
   - title: Best available reasoner
     priority: 20
     description: Use for ambiguous, high-impact work where quality matters most.
+
+review:
+  enabled: true
+  description: |
+    Review completed changes for regressions.
+    Include maintainability findings with evidence.
+
+qa:
+  enabled: true
+  description: |
+    Exercise changed behavior.
+    Verify the request's acceptance criteria.
+  invocation: |
+    Run `my-qa-tool --changed`.
+    Summarize failures and preserve command output.
 ```
 
-The file itself and every field are optional. A profile can contain only the information you want to override. Empty entries are ignored. Lower priority numbers express a preference among equally suitable profiles; capability still wins when a task requires it. Free-form invocation instructions allow profiles to use another agent API, CLI, or tool without baking that provider into the skill. Without a configuration file, the agent chooses from the models and tools available in its environment.
+The file, every section, and every parameter are optional:
+
+| Parameter | Meaning |
+|-----------|---------|
+| `models` | List of available routing profiles. Environment defaults are used when omitted. |
+| `models[].title` | Human-readable label; it does not need to be a provider model ID. |
+| `models[].description` | Guidance describing the work suited to the profile. |
+| `models[].priority` | Numeric preference among equally suitable profiles; lower numbers win. |
+| `models[].invocation` | Free-form instructions for invoking the agent, model, CLI, API, or tool. |
+| `review` | Enables automatic post-change review when present, unless explicitly disabled. |
+| `review.enabled` | Set to `false` to disable review; omission means enabled. |
+| `review.description` | Free-form review scope and worker-selection guidance. |
+| `review.invocation` | Free-form instructions for invoking the reviewer or review tool. |
+| `qa` | Enables automatic post-change behavioral QA when present, unless explicitly disabled. |
+| `qa.enabled` | Set to `false` to disable QA; omission means enabled. |
+| `qa.description` | Free-form QA scope, acceptance criteria, and worker-selection guidance. |
+| `qa.invocation` | Free-form instructions for invoking the QA agent, test runner, or tool. |
+
+All `description` and `invocation` parameters accept single-line or multiline YAML strings. Use `|`
+when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
+plugin preserves the parsed multiline value when injecting it into an assignment.
+
+#### Complex invocations
+
+Keep short calls inline. For multi-step commands, branching, retries, substantial quoting, or logic
+shared by several profiles, put the implementation in a script and use `invocation` to teach the
+agent how to run it:
+
+```yaml
+review:
+  invocation: |
+    Run `.smart-delegate/scripts/review.sh` from the project root.
+    Pass the complete review assignment on stdin.
+    Read JSON findings from stdout.
+    Exit code 0 means the review completed, even when findings exist.
+    A nonzero exit means execution failed; preserve and report stderr.
+```
+
+Document the script path and runtime, working directory, inputs, outputs or generated artifacts,
+exit-code semantics, prerequisites, and safe failure behavior. Paths should be relative to the
+configuration file or project, with the base stated explicitly. The agent should inspect the
+script's help or relevant source before first use and must not guess missing arguments.
+
+Review inspects the quality and correctness of the changes. QA exercises observable behavior. Coordinator runs enabled stages automatically, routes them through Smart Delegate, and feeds actionable failures back into the correction loop.
 
 ### The Upgrade Rule
 
@@ -102,6 +170,7 @@ You can also invoke it explicitly:
 
 ```
 /smart-delegate:smart-delegate
+/smart-delegate:coordinator
 ```
 
 ## Routing Examples
@@ -147,6 +216,8 @@ smart-delegate/
 ├── .claude-plugin/
 │   └── plugin.json          # Claude Code plugin manifest
 └── skills/
+    ├── coordinator/
+    │   └── SKILL.md          # Orchestration and observation loop
     └── smart-delegate/
         ├── SKILL.md          # Provider-agnostic routing rules
         └── models.yaml       # Bundled default profiles
