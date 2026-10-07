@@ -8,9 +8,14 @@ description: >
 
 # Smart Delegate
 
-Delegate focused work when doing so improves quality, speed, or context isolation. Select the
-least expensive available model that can reliably complete each task, and prefer the more capable
-option when uncertain.
+Delegate focused work when doing so improves quality, speed, or context isolation. Quality comes
+first: pick the least expensive model that can reliably complete the task, and prefer the more
+capable one when uncertain. A weak answer from a cheaper model costs more in rework than the
+stronger model would have.
+
+This skill only recommends which model suits an assignment. How to delegate (which tool, agent
+type, or mechanism) is decided by the host environment's own delegation instructions. Do not
+override them.
 
 ## Inject routing preferences automatically
 
@@ -20,16 +25,18 @@ Whenever this skill activates, look for a model profile configuration in this or
 2. `~/.config/smart-delegate/config.yaml`
 3. [config.yaml](config.yaml), the bundled defaults
 
-If a file exists, read it automatically and use the first one found; do not merge files. Inject its
-relevant preferences and invocation guidance into every delegated assignment. Do not require the
-user to mention or paste the configuration. If no file exists, route using the available models and
-tools without configuration.
+Read the first file found automatically; do not merge files. The bundled defaults define four
+tiers (Fast, Focused, Deep, Strongest), each listing preferred model names, and apply whenever the
+user has no configuration of their own. Inject the relevant preferences and invocation guidance
+into every delegated assignment. Do not require the user to mention or paste the configuration. If
+no file can be read, route using the models available in the environment.
 
 A configuration may contain an ordered `models` list and optional `review` and `qa` stages:
 
 ```yaml
 models:
   - title: Focused worker
+    model: Sonnet
     priority: 10
     description: |
       Use for bounded implementation and investigation.
@@ -63,6 +70,11 @@ section, and every parameter are optional. Supported parameters are:
 - `models`: list of available routing profiles. When absent or empty, select from models and tools
   available in the environment.
 - `models[].title`: human-readable profile label; it does not need to match a provider model ID.
+- `models[].model`: optional model name or ID, or a list of them in preference order (for example
+  `[Sonnet, Terra]`). Use the first one available in the environment, passing it as the model
+  parameter of the host's delegation tool when that tool accepts one, or injecting it into
+  `invocation`. When absent or none is available, use the host's default model for the profile; if
+  that is also unsuitable, fall back to the next suitable profile.
 - `models[].description`: guidance describing which tasks suit the profile. When absent, infer
   suitability from the other fields and current environment.
 - `models[].priority`: numeric preference among equally suitable profiles; lower numbers are
@@ -99,10 +111,10 @@ Ignore empty model entries and unknown parameters that cannot inform routing. Fo
 or QA stage without `invocation`, select an appropriate configured profile and available delegation
 mechanism. Pass enabled stages to Coordinator; Smart Delegate selects and invokes their workers.
 
-Treat descriptions as selection guidance, not keyword rules. If no invocation is provided, choose
-an available provider, model, agent type, and invocation mechanism based on the task and current
-environment. Never invent an unavailable model or tool. If a configured invocation cannot be used,
-select the next suitable profile or use the environment's normal delegation mechanism.
+Treat descriptions as selection guidance, not keyword rules. If no invocation is provided, use the
+environment's normal delegation mechanism with the selected model. Never invent an unavailable
+model or tool. If a configured invocation cannot be used, select the next suitable profile or use
+the environment's normal delegation mechanism.
 
 ## Decide when to delegate
 
@@ -128,9 +140,10 @@ lower.
 
 Typical routing signals:
 
-- Mechanical lookups and transformations need little judgment.
-- Bounded implementation, diagnosis, review, and synthesis need general reasoning.
-- Architecture, security, ambiguous tradeoffs, and high-stakes verification need deeper judgment.
+- Lookups, exploration, and transformations need little judgment (Fast).
+- Bounded implementation, diagnosis, review, and synthesis with clear instructions (Focused).
+- Architecture, ambiguity, security, and tradeoffs need deeper judgment (Deep).
+- Costly-to-reverse or highest-stakes decisions justify the strongest tier (Strongest).
 
 Configuration expresses user preferences but does not override availability, safety constraints,
 or explicit instructions in the current request.

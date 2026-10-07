@@ -23,15 +23,16 @@ The savings come from **delegation efficiency**: parallel execution, context iso
 
 ### Model Routing
 
-Every task gets matched to a semantic capability profile. The bundled defaults are:
+Every task gets matched to a capability tier. With no configuration of your own, the bundled defaults in `skills/smart-delegate/config.yaml` apply:
 
-| Profile | When to use |
-|---------|-------------|
-| **Mechanical** | Tasks with a single clear answer — file lookups, searches, format conversion, boilerplate |
-| **General reasoning** | Tasks requiring reasoning within clear boundaries — code review, bug diagnosis, test writing, exploration |
-| **Deep judgment** | Tasks requiring judgment under ambiguity — architecture design, security review, complex refactoring |
+| Tier | Models (first available) | When to use |
+|------|--------------------------|-------------|
+| **Fast** | Haiku, Luna | Simple, low-risk tasks with one verifiable answer — exploration, searches, extraction, boilerplate |
+| **Focused** | Sonnet, Terra | Well-scoped tasks with clear instructions — implementation, tests, bug diagnosis, routine review |
+| **Deep** | Opus, Sol | Ambiguous or difficult work — architecture, refactor planning, security analysis, tradeoffs |
+| **Strongest** | Fable | Highest-stakes or hardest problems — costly-to-reverse decisions, final verification |
 
-The skill does not assume Claude, OpenAI, or any other provider. Unless configuration supplies invocation instructions, the agent chooses an appropriate model and delegation tool available in its current environment.
+Quality comes first: when a task sits between two tiers, the stronger one wins. Smart Delegate only recommends the model; the host environment's own delegation instructions decide how the agent is launched. Any config file you create (project or user-wide) replaces these defaults entirely.
 
 ### Configuration
 
@@ -40,6 +41,7 @@ Smart Delegate and Coordinator use the same optional general configuration file.
 ```yaml
 models:
   - title: Fast local model
+    model: [Sonnet, Terra]
     priority: 10
     description: |
       Use for private, mechanical tasks.
@@ -74,6 +76,7 @@ The file, every section, and every parameter are optional:
 |-----------|---------|
 | `models` | List of available routing profiles. Environment defaults are used when omitted. |
 | `models[].title` | Human-readable label; it does not need to be a provider model ID. |
+| `models[].model` | Optional model name/ID or list in preference order (for example `[Sonnet, Terra]`). The first available is used; the host default applies when omitted. |
 | `models[].description` | Guidance describing the work suited to the profile. |
 | `models[].priority` | Numeric preference among equally suitable profiles; lower numbers win. |
 | `models[].invocation` | Free-form instructions for invoking the agent, model, CLI, API, or tool. |
@@ -175,19 +178,19 @@ You can also invoke it explicitly:
 
 ## Routing Examples
 
-### Mechanical profile
+### Fast tier
 - "Find all files matching `*.test.ts`"
 - "Search for `DatabaseConnection` in the codebase"
 - "Extract all environment variables from this config"
 - "Convert this JSON schema to TypeScript types"
 
-### General reasoning profile
+### Focused tier
 - "How does the authentication middleware work?"
 - "Review this PR for code quality issues"
 - "Write unit tests for the `UserService` class"
 - "Why does the build fail when running on CI?"
 
-### Deep judgment profile
+### Deep tier
 - "Design the data model for the new billing system"
 - "Is this migration safe under concurrent writes?"
 - "What's the best approach to decompose this monolith?"
