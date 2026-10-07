@@ -4,6 +4,7 @@ description: >
   Coordinate complex work by decomposing it into bounded assignments, delegating independent
   tasks, observing results, adapting when work fails, and synthesizing a verified outcome. Use
   when a request has multiple workstreams, dependencies, or benefits from agent orchestration.
+allowed-tools: Bash(python3 *load-config.py*)
 ---
 
 # Coordinator

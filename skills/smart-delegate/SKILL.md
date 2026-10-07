@@ -4,6 +4,7 @@ description: >
   Quality-first delegation that routes independent work to suitable agents or models without
   assuming a particular provider. Use for multi-file exploration, reviews, research, parallel
   work, or when the user asks to delegate or use agents.
+allowed-tools: Bash(python3 *load-config.py*)
 ---
 
 # Smart Delegate
