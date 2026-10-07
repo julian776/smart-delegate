@@ -36,7 +36,7 @@ Quality comes first: when a task sits between two tiers, the stronger one wins. 
 
 ### Configuration
 
-Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. The plugin detects the first available file automatically and injects its relevant routing, review, QA, and invocation guidance into delegated assignments:
+Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. The selected profile's `invocation` is passed verbatim into every delegated assignment. Only full-line `#` comments are removed; text inside `|` and `>` blocks is kept exactly.
 
 ```yaml
 models:
@@ -233,7 +233,8 @@ smart-delegate/
     │   └── SKILL.md          # Orchestration and observation loop
     └── smart-delegate/
         ├── SKILL.md          # Provider-agnostic routing rules
-        └── config.yaml       # Shared routing, review, QA, and invocation config
+        ├── scripts/load-config.py  # Loads the active config with comments stripped
+        └── config.yaml       # Bundled default tiers
 ```
 
 ## Contributing

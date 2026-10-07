@@ -13,9 +13,13 @@ pending, active, complete, failed, or blocked; do not treat delegation itself as
 
 ## Use Smart Delegate
 
-Before assigning work, read [Smart Delegate](../smart-delegate/SKILL.md) and use its active model
-configuration, routing preferences, and invocation instructions. Inject the relevant selected
-profile information into each assignment. The coordinator decides what to delegate; Smart Delegate
+Before assigning work, read [Smart Delegate](../smart-delegate/SKILL.md) for how to route, and use
+the active configuration injected below (comments already removed; do not read the config files
+yourself):
+
+!`python3 "${CLAUDE_SKILL_DIR}/../smart-delegate/scripts/load-config.py"`
+
+Pass the selected profile's `invocation` text verbatim in every assignment, each time you delegate. The coordinator decides what to delegate; Smart Delegate
 decides how and where to delegate it.
 
 If Smart Delegate or its configured invocation mechanism is unavailable, use the host environment's

@@ -17,19 +17,23 @@ This skill only recommends which model suits an assignment. How to delegate (whi
 type, or mechanism) is decided by the host environment's own delegation instructions. Do not
 override them.
 
-## Inject routing preferences automatically
+## Active configuration
 
-Whenever this skill activates, look for a model profile configuration in this order:
+Every time this skill is invoked, the active configuration is loaded by
+`scripts/load-config.py` and injected below with YAML comments removed. Use only this injected
+text. Do not read the configuration files yourself, and do not ask the user to paste them.
 
-1. `.smart-delegate/config.yaml` in the current project
-2. `~/.config/smart-delegate/config.yaml`
-3. [config.yaml](config.yaml), the bundled defaults
+!`python3 "${CLAUDE_SKILL_DIR}/scripts/load-config.py"`
 
-Read the first file found automatically; do not merge files. The bundled defaults define four
-tiers (Fast, Focused, Deep, Strongest), each listing preferred model names, and apply whenever the
-user has no configuration of their own. Inject the relevant preferences and invocation guidance
-into every delegated assignment. Do not require the user to mention or paste the configuration. If
-no file can be read, route using the models available in the environment.
+The script uses the first file found and does not merge: `.smart-delegate/config.yaml` in the
+current project, then `~/.config/smart-delegate/config.yaml`, then the bundled
+[config.yaml](config.yaml) defaults (four tiers: Fast, Focused, Deep, Strongest, each listing
+preferred model names). If nothing is injected above, route using the models available in the
+environment.
+
+When you delegate, pass the selected profile's `invocation` text verbatim in the assignment, along
+with its `description` when it helps the delegate. Do this on every delegation, not only the first.
+For enabled `review` and `qa` stages, pass their `description` and `invocation` the same way.
 
 A configuration may contain an ordered `models` list and optional `review` and `qa` stages:
 
