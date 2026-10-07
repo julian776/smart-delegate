@@ -4,7 +4,7 @@ A provider-agnostic plugin for **intelligent multi-agent coordination**. Its two
 
 ## Skills
 
-- **Coordinator** decomposes work, delegates independent assignments, observes results, recovers from failures, and synthesizes a verified outcome.
+- **Coordinator** is accountable for the quality and output of the task. It never executes work itself: it decomposes, delegates, checks what every agent reports back, recovers from failures, and synthesizes a verified outcome, keeping its own context clean. When it needs information, it asks an agent sized to the difficulty.
 - **Smart Delegate** selects a suitable configured profile, model, and invocation mechanism for each assignment.
 
 Use Coordinator for multi-step or multi-agent work. It automatically applies Smart Delegate when choosing how each assignment should run.
@@ -36,7 +36,7 @@ Quality comes first: when a task sits between two tiers, the stronger one wins. 
 
 ### Configuration
 
-Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. The selected profile's `invocation` is passed verbatim into every delegated assignment. Only full-line `#` comments are removed; text inside `|` and `>` blocks is kept exactly.
+Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks is kept exactly.
 
 ```yaml
 models:
