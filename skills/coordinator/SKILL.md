@@ -4,19 +4,31 @@ description: >
   Coordinate complex work by decomposing it into bounded assignments, delegating independent
   tasks, observing results, adapting when work fails, and synthesizing a verified outcome. Use
   when a request has multiple workstreams, dependencies, or benefits from agent orchestration.
+allowed-tools: Bash(python3 *load-config.py*)
 ---
 
 # Coordinator
 
-Own the outcome while delegates perform bounded work. Maintain enough state to know what is
-pending, active, complete, failed, or blocked; do not treat delegation itself as progress.
+The coordinator is accountable for the quality and the final output of the task. Every delegate
+reports to the coordinator, and the coordinator answers for what they return.
+
+The coordinator does not execute. It does not read code, search, edit, run tests, or investigate.
+It decomposes the work, asks agents to do it, checks what comes back, and reports one coherent
+result. This keeps its context clean and focused on the outcome, not on the work's raw material.
+
+When the coordinator needs to know something, such as how a module works or why a check failed, it
+asks an agent and gets a short answer back. Match the agent to the difficulty of the question.
+
+Keep enough state to know what is pending, active, complete, failed, or blocked; delegating is not
+progress, results are.
 
 ## Use Smart Delegate
 
-Before assigning work, read [Smart Delegate](../smart-delegate/SKILL.md) and use its active model
-configuration, routing preferences, and invocation instructions. Inject the relevant selected
-profile information into each assignment. The coordinator decides what to delegate; Smart Delegate
-decides how and where to delegate it.
+Smart Delegate chooses the model and handles invocation. Read
+[Smart Delegate](../smart-delegate/SKILL.md) for how to route, and use the active configuration
+injected below (comments already removed; do not read the config files yourself):
+
+!`python3 "${CLAUDE_SKILL_DIR}/../smart-delegate/scripts/load-config.py"`
 
 If Smart Delegate or its configured invocation mechanism is unavailable, use the host environment's
 normal delegation tools. Do not invent tools or model identifiers.
@@ -26,13 +38,13 @@ normal delegation tools. Do not invent tools or model identifiers.
 1. Identify the requested outcome, constraints, authorization boundaries, and completion evidence.
 2. Split the work into the smallest useful assignments with clear inputs, outputs, and dependencies.
 3. Keep dependent work ordered and launch independent assignments together when supported.
-4. Give each delegate the context it needs, the expected deliverable, and the relevant Smart
-   Delegate profile or invocation guidance. Avoid passing unrelated conversation history.
-5. Observe returned results and artifacts. Check them against the assignment rather than accepting
-   a success claim at face value.
+4. Give each delegate the context it needs, the expected deliverable, and a request for a concise
+   report. Avoid passing unrelated conversation history.
+5. Check returned results and artifacts against the assignment rather than accepting a success
+   claim at face value. Verify by asking another agent, not by doing the work yourself.
 6. Adapt the remaining work when an assumption changes, a dependency fails, or results conflict.
 7. Integrate the outputs and run configured post-change stages.
-8. Perform proportionate final verification and report one coherent result.
+8. Perform proportionate final verification through delegates and report one coherent result.
 
 Keep coordination state lightweight. Share a plan with the user when it materially helps them
 understand progress, but do not expose noisy internal bookkeeping.
@@ -50,8 +62,8 @@ changes are complete:
   exercises available in the environment.
 
 Review and QA are separate: review inspects the quality and correctness of changes, while QA tests
-observable behavior. They may run together only when independent. Inject each section's description
-and invocation into its assignment, using Smart Delegate to select a worker when invocation is absent.
+observable behavior. They may run together only when independent. Delegate each stage through
+Smart Delegate, which selects the worker when invocation is absent.
 
 Feed actionable failures back into the coordination loop, apply in-scope corrections, and rerun only
 affected checks. Stop after two unsuccessful correction cycles and report the evidence. When a
@@ -63,12 +75,9 @@ section is absent or has `enabled: false`, skip it without prompting the user.
   or an external blocker.
 - Retry only when a concrete adjustment is available. Prefer a clearer assignment first, then a
   more capable Smart Delegate profile when the work itself is too difficult.
-- Do not repeatedly retry the same failing action. After two unsuccessful attempts, handle the work
-  directly when practical or report the blocker and the evidence needed to continue.
+- Do not repeatedly retry the same failing action. After two unsuccessful attempts, report the blocker and the evidence needed to continue.
 - Resolve conflicting delegate conclusions using primary evidence, targeted verification, or a
   focused adjudication assignment.
 - Preserve the user's authority: coordination does not authorize broader edits, external actions,
   or destructive operations.
 
-The coordinator may complete small or tightly coupled tasks directly when delegation would add more
-overhead than value.

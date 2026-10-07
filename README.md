@@ -4,7 +4,7 @@ A provider-agnostic plugin for **intelligent multi-agent coordination**. Its two
 
 ## Skills
 
-- **Coordinator** decomposes work, delegates independent assignments, observes results, recovers from failures, and synthesizes a verified outcome.
+- **Coordinator** is accountable for the quality and output of the task. It never executes work itself: it decomposes, delegates, checks what every agent reports back, recovers from failures, and synthesizes a verified outcome, keeping its own context clean. When it needs information, it asks an agent sized to the difficulty.
 - **Smart Delegate** selects a suitable configured profile, model, and invocation mechanism for each assignment.
 
 Use Coordinator for multi-step or multi-agent work. It automatically applies Smart Delegate when choosing how each assignment should run.
@@ -23,23 +23,25 @@ The savings come from **delegation efficiency**: parallel execution, context iso
 
 ### Model Routing
 
-Every task gets matched to a semantic capability profile. The bundled defaults are:
+Every task gets matched to a capability tier. With no configuration of your own, the bundled defaults in `skills/smart-delegate/config.yaml` apply:
 
-| Profile | When to use |
-|---------|-------------|
-| **Mechanical** | Tasks with a single clear answer — file lookups, searches, format conversion, boilerplate |
-| **General reasoning** | Tasks requiring reasoning within clear boundaries — code review, bug diagnosis, test writing, exploration |
-| **Deep judgment** | Tasks requiring judgment under ambiguity — architecture design, security review, complex refactoring |
+| Tier | Models (first available) | When to use |
+|------|--------------------------|-------------|
+| **Fast** | Haiku, Luna | Simple, low-risk tasks with one verifiable answer — exploration, searches, extraction, boilerplate |
+| **Focused** | Sonnet, Terra | Well-scoped tasks with clear instructions — implementation, tests, bug diagnosis, routine review |
+| **Deep** | Opus, Sol | Ambiguous or difficult work — architecture, refactor planning, security analysis, tradeoffs |
+| **Strongest** | Fable | Highest-stakes or hardest problems — costly-to-reverse decisions, final verification |
 
-The skill does not assume Claude, OpenAI, or any other provider. Unless configuration supplies invocation instructions, the agent chooses an appropriate model and delegation tool available in its current environment.
+Quality comes first: when a task sits between two tiers, the stronger one wins. Smart Delegate only recommends the model; the host environment's own delegation instructions decide how the agent is launched. Any config file you create (project or user-wide) replaces these defaults entirely.
 
 ### Configuration
 
-Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. The plugin detects the first available file automatically and injects its relevant routing, review, QA, and invocation guidance into delegated assignments:
+Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks is kept exactly.
 
 ```yaml
 models:
   - title: Fast local model
+    model: [Sonnet, Terra]
     priority: 10
     description: |
       Use for private, mechanical tasks.
@@ -74,6 +76,7 @@ The file, every section, and every parameter are optional:
 |-----------|---------|
 | `models` | List of available routing profiles. Environment defaults are used when omitted. |
 | `models[].title` | Human-readable label; it does not need to be a provider model ID. |
+| `models[].model` | Optional model name/ID or list in preference order (for example `[Sonnet, Terra]`). The first available is used; the host default applies when omitted. |
 | `models[].description` | Guidance describing the work suited to the profile. |
 | `models[].priority` | Numeric preference among equally suitable profiles; lower numbers win. |
 | `models[].invocation` | Free-form instructions for invoking the agent, model, CLI, API, or tool. |
@@ -89,6 +92,16 @@ The file, every section, and every parameter are optional:
 All `description` and `invocation` parameters accept single-line or multiline YAML strings. Use `|`
 when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
 plugin preserves the parsed multiline value when injecting it into an assignment.
+
+#### Example: multiple providers
+
+[`examples/multi-provider.config.yaml`](examples/multi-provider.config.yaml) is a copy-and-edit
+example for running Claude as the host while delegating some work to **Codex CLI** (`codex exec`,
+including `codex exec review`) and **OpenCode** (`opencode run`). It documents how to invoke each
+one: assignment on stdin or attached file, model selection, read-only defaults, where results
+appear, and what to do on failure. It is not a default and is never loaded automatically; copy it
+to `.smart-delegate/config.yaml` or `~/.config/smart-delegate/config.yaml` and replace the
+`<model>` placeholders with models you have access to.
 
 #### Complex invocations
 
@@ -175,19 +188,19 @@ You can also invoke it explicitly:
 
 ## Routing Examples
 
-### Mechanical profile
+### Fast tier
 - "Find all files matching `*.test.ts`"
 - "Search for `DatabaseConnection` in the codebase"
 - "Extract all environment variables from this config"
 - "Convert this JSON schema to TypeScript types"
 
-### General reasoning profile
+### Focused tier
 - "How does the authentication middleware work?"
 - "Review this PR for code quality issues"
 - "Write unit tests for the `UserService` class"
 - "Why does the build fail when running on CI?"
 
-### Deep judgment profile
+### Deep tier
 - "Design the data model for the new billing system"
 - "Is this migration safe under concurrent writes?"
 - "What's the best approach to decompose this monolith?"
@@ -220,7 +233,8 @@ smart-delegate/
     │   └── SKILL.md          # Orchestration and observation loop
     └── smart-delegate/
         ├── SKILL.md          # Provider-agnostic routing rules
-        └── config.yaml       # Shared routing, review, QA, and invocation config
+        ├── scripts/load-config.py  # Loads the active config with comments stripped
+        └── config.yaml       # Bundled default tiers
 ```
 
 ## Contributing

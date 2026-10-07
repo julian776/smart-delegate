@@ -1,23 +1,51 @@
-# Bundled provider-agnostic defaults. Every field is optional. Copy this file
-# to .smart-delegate/config.yaml to customize the plugin for a project.
+# Bundled defaults, used when neither .smart-delegate/config.yaml nor
+# ~/.config/smart-delegate/config.yaml exists. Every field is optional. Copy this file to either
+# location to customize it; the first file found replaces these defaults entirely (no merging).
+#
+# `model` accepts one name or a list in preference order. The first name available in the current
+# environment is used; if none is available, the host's default model is used instead.
+# Lower `priority` is preferred between equally suitable tiers, but quality wins: when a task sits
+# between two tiers, choose the stronger one.
 models:
-  - title: Mechanical
+  - title: Fast
+    model: [Haiku, Luna]
     priority: 10
     description: >
-      Use for deterministic, narrowly scoped work with a single clear answer, such as file
-      discovery, exact searches, extraction, format conversion, and repetitive boilerplate.
+      Use for simple, low-risk work with a single verifiable answer and little judgment: locating
+      files, exact searches, listing usages, extracting or reformatting data, summarizing a small
+      input, and repetitive boilerplate. Ideal for exploration that returns a short list of
+      findings. Do not use when the answer needs interpretation, when a wrong result would be hard
+      to notice, or when instructions are vague.
 
-  - title: General reasoning
+  - title: Focused
+    model: [Sonnet, Terra]
     priority: 20
     description: >
-      Use for bounded work requiring reasoning or synthesis, such as code exploration, diagnosis,
-      implementation from a clear specification, tests, documentation, and routine review.
+      Use for well-scoped tasks with clear instructions and a defined outcome: implementing a
+      specified change, writing tests, diagnosing a contained bug, documenting code, routine code
+      review, and synthesizing several files into a conclusion. The assignment should state the
+      goal, the boundaries, and how success is checked. Do not use when requirements are unclear or
+      the work needs design decisions.
 
-  - title: Deep judgment
+  - title: Deep
+    model: [Opus, Sol]
     priority: 30
     description: >
-      Use for ambiguous or high-impact work requiring strong judgment, such as architecture,
-      security analysis, cross-cutting refactors, subtle tradeoffs, and final verification.
+      Use for difficult work that is ambiguous, cross-cutting, or needs sustained reasoning:
+      designing architecture or data models, planning large refactors, investigating hard-to-
+      reproduce failures, weighing tradeoffs, security analysis, and reviewing work other agents
+      produced. Choose this when requirements must be inferred or when a shallow answer would cost
+      more in rework than the stronger model costs.
+
+  - title: Strongest
+    model: [Fable]
+    priority: 40
+    description: >
+      Use sparingly for the highest-stakes or hardest problems, where the Deep tier has failed or
+      would plausibly miss subtle issues: critical design decisions that are costly to reverse,
+      security-sensitive or irreversible changes, intricate multi-system debugging, and final
+      verification of large efforts. Not for routine work; reserve it for questions where
+      correctness matters more than cost or speed.
 
 # Optional post-change stages. Uncomment either section to enable it. Both
 # skills read these sections from this same file; no per-skill config is needed.
