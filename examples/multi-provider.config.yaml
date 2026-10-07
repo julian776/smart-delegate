@@ -1,0 +1,82 @@
+# Example: Claude is the host and coordinator; Codex CLI and OpenCode run some of the delegated work.
+#
+# NOT a default. Copy it to .smart-delegate/config.yaml (one project) or
+# ~/.config/smart-delegate/config.yaml (all projects). A config file replaces the bundled
+# defaults entirely.
+#
+# Prerequisites: `codex` and `opencode` installed and authenticated. Verified against
+# codex-cli 0.160 (`codex exec --help`) and opencode 1.18 (`opencode run --help`). Replace the
+# <placeholders> with models you have: run `opencode models` to list OpenCode's
+# provider/model IDs; Codex accepts any model name your account supports (`codex exec -m`).
+#
+# Safety defaults used below: Codex runs in the read-only sandbox for analysis and
+# workspace-write only for edits; OpenCode runs with its read-only `plan` agent for analysis and
+# never with `--auto` unless you add it yourself.
+models:
+  - title: Fast (Claude)
+    model: [Haiku]
+    priority: 10
+    description: >
+      Simple, low-risk work with one verifiable answer: file discovery, exact searches, listing
+      usages, extraction, and boilerplate. Runs as a native Claude subagent.
+
+  - title: Focused (Claude)
+    model: [Sonnet]
+    priority: 20
+    description: >
+      Well-scoped implementation, tests, contained bug diagnosis, and documentation when the
+      assignment has clear instructions and a defined outcome.
+
+  - title: Focused (OpenCode)
+    priority: 25
+    description: >
+      Well-scoped, read-only investigation or second-opinion analysis where a different model
+      family adds value, or when Claude capacity should be saved. Returns findings as text.
+    invocation: |
+      Run from the project root with the complete assignment as the message:
+        opencode run --agent plan -m <provider/model> "<assignment>"
+      - `-m` uses the `provider/model` format; list valid IDs with `opencode models`.
+      - `--agent plan` is OpenCode's read-only agent: it analyzes but does not edit files.
+        Do not pass `--auto` (it auto-approves permissions).
+      - Use `-f <path>` to attach files; for long assignments, write them to a temp file and attach
+        it with `-f`, then use a short message such as "Follow the attached assignment."
+      - The final answer is printed to stdout. Add `--format json` only if raw events are needed.
+      - A nonzero exit means the run failed; report stderr and fall back to a Claude profile.
+
+  - title: Deep (Codex)
+    priority: 30
+    description: >
+      Hard, ambiguous, or cross-cutting work needing sustained reasoning: architecture, difficult
+      debugging, refactor planning, and security analysis, especially as an independent second
+      opinion on Claude's own conclusions.
+    invocation: |
+      Run from the project root with the assignment on stdin and the final message in a file:
+        codex exec -m <model> -s read-only --ephemeral -o "$OUT" - < "$ASSIGNMENT"
+      - Create `$ASSIGNMENT` and `$OUT` as temp files; read `$OUT` for the result. Progress goes to
+        stderr and the final message to stdout, so `$OUT` is the clean copy.
+      - `-s read-only` suits analysis. Use `-s workspace-write` only when the assignment explicitly
+        asks Codex to edit files, and name the allowed paths in the assignment.
+      - Never use `--dangerously-bypass-approvals-and-sandbox`.
+      - `-m <model>` is optional; omit it to use the model from `~/.codex/config.toml`.
+      - A nonzero exit means the run failed; report stderr and fall back to a Claude profile.
+
+  - title: Deep (Claude)
+    model: [Opus]
+    priority: 35
+    description: >
+      Hard design and reasoning work, and the default choice when Codex is unavailable. Also
+      suited to reviewing and integrating results from other agents.
+
+review:
+  enabled: true
+  description: |
+    Independent review of the completed change for correctness bugs and regressions. Prefer a
+    different model family than the one that wrote the code.
+  invocation: |
+    Run from the project root:
+      codex exec review --uncommitted -m <model> -o "$OUT"
+    (use `--base <branch>` instead of `--uncommitted` to review a whole branch, or `--commit <sha>`
+    for one commit). Read `$OUT` for prioritized findings. Review does not need write access. If
+    Codex fails, review with a Claude Deep profile instead.
+
+# QA is left disabled: enable it with `qa: {}` or add an invocation if you have a test runner.

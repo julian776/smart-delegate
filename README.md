@@ -93,6 +93,16 @@ All `description` and `invocation` parameters accept single-line or multiline YA
 when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
 plugin preserves the parsed multiline value when injecting it into an assignment.
 
+#### Example: multiple providers
+
+[`examples/multi-provider.config.yaml`](examples/multi-provider.config.yaml) is a copy-and-edit
+example for running Claude as the host while delegating some work to **Codex CLI** (`codex exec`,
+including `codex exec review`) and **OpenCode** (`opencode run`). It documents how to invoke each
+one: assignment on stdin or attached file, model selection, read-only defaults, where results
+appear, and what to do on failure. It is not a default and is never loaded automatically; copy it
+to `.smart-delegate/config.yaml` or `~/.config/smart-delegate/config.yaml` and replace the
+`<model>` placeholders with models you have access to.
+
 #### Complex invocations
 
 Keep short calls inline. For multi-step commands, branching, retries, substantial quoting, or logic
