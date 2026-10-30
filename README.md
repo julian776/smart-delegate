@@ -143,7 +143,18 @@ The skill instructs the host agent to delegate when work is:
 
 ## Installation
 
-### Step 1: Add the marketplace
+### Recommended: skills.sh (all your environments)
+
+```bash
+npx skills add julian776/smart-delegate -g
+```
+
+`-g` installs globally, so the `smart-delegate` and `coordinator` skills are available in every
+project and every supported agent. Update later with `npx skills update`.
+
+### Alternative: Claude Code plugin
+
+#### Step 1: Add the marketplace
 
 From within Claude Code, add this repository as a plugin marketplace:
 
@@ -151,7 +162,7 @@ From within Claude Code, add this repository as a plugin marketplace:
 /plugin marketplace add julian776/smart-delegate
 ```
 
-### Step 2: Install the plugin
+#### Step 2: Install the plugin
 
 ```
 /plugin install smart-delegate@julian776-smart-delegate

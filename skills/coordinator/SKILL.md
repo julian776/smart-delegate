@@ -33,6 +33,23 @@ injected below (comments already removed; do not read the config files yourself)
 If Smart Delegate or its configured invocation mechanism is unavailable, use the host environment's
 normal delegation tools. Do not invent tools or model identifiers.
 
+## Plan, approve, then run to completion
+
+For non-trivial work, first delegate the planning to a capable agent, then present the user one
+short plan: the outcome, the assignments, which stages will run (review, QA, UI and UX
+verification), and the acceptance criteria. Ask for approval once. After approval, run every stage
+through to the final report without further questions. Stop only for a real blocker or an action
+outside the approved scope. Skip the approval step when the user already supplied an approved plan
+or the task is small and unambiguous.
+
+## Run in the background
+
+Every delegated call that can take more than a few seconds runs in the background (for example
+Bash `run_in_background`, or a background subagent), so the user can keep talking to the
+coordinator and queue more work meanwhile. Launch independent assignments together, do not poll,
+and continue when completion notifications arrive. Give long external CLI calls a time limit so a
+hung worker cannot stall the run.
+
 ## Coordinate the work
 
 1. Identify the requested outcome, constraints, authorization boundaries, and completion evidence.
@@ -60,6 +77,11 @@ changes are complete:
 - When `qa` is present and `enabled` is not `false`, exercise the changed behavior against the
   request and acceptance criteria automatically. Use suitable tests, checks, or focused manual
   exercises available in the environment.
+
+When the change has a user-facing surface, QA also covers UI verification (it renders and works as
+specified) and UX verification (the flow is clear, states and errors are handled, nothing
+regresses). Drive the running app with screenshots or console output as evidence, and delegate the
+judgment to an agent suited to design review when one is available.
 
 Review and QA are separate: review inspects the quality and correctness of changes, while QA tests
 observable behavior. They may run together only when independent. Delegate each stage through

@@ -14,9 +14,10 @@ first: pick the least expensive model that can reliably complete the task, and p
 capable one when uncertain. A weak answer from a cheaper model costs more in rework than the
 stronger model would have.
 
-This skill only recommends which model suits an assignment. How to delegate (which tool, agent
-type, or mechanism) is decided by the host environment's own delegation instructions. Do not
-override them.
+This skill recommends which model suits an assignment. When the selected profile has an
+`invocation`, follow it as the delegation mechanism (for example a CLI such as `codex` or
+`opencode`). Otherwise use the host environment's own delegation tools. Run slow invocations in the
+background with a time limit.
 
 ## Active configuration
 
