@@ -35,12 +35,24 @@ normal delegation tools. Do not invent tools or model identifiers.
 
 ## Plan, approve, then run to completion
 
-For non-trivial work, first delegate the planning to a capable agent, then present the user one
-short plan: the outcome, the assignments, which stages will run (review, QA, UI and UX
-verification), and the acceptance criteria. Ask for approval once. After approval, run every stage
-through to the final report without further questions. Stop only for a real blocker or an action
-outside the approved scope. Skip the approval step when the user already supplied an approved plan
-or the task is small and unambiguous.
+For non-trivial work, planning is a team effort, never a single agent. Run it in rounds, all
+through delegates:
+
+1. **Diverge.** Launch several planning agents together, each with a different lens: for example
+   architecture and data flow, risks and edge cases, testing and verification, and UI/UX when the
+   change has a user-facing surface. Use at least three agents and different models or families
+   when available, so they do not share blind spots. Each returns a concise proposal.
+2. **Challenge.** Pass the proposals to a critic agent (or have the planners read each other's
+   proposals) to find conflicts, gaps, and unstated assumptions. Resolve disagreements with
+   evidence, or run one more focused round.
+3. **Converge.** One strong agent merges the result into a single plan, which the coordinator
+   checks against the request.
+
+Then present the user one short plan: the outcome, the assignments, which stages will run (review,
+QA, UI and UX verification), the acceptance criteria, and any open disagreement between planners.
+Ask for approval once. After approval, run every stage through to the final report without further
+questions. Stop only for a real blocker or an action outside the approved scope. Skip planning
+rounds when the user already supplied an approved plan or the task is small and unambiguous.
 
 ## Run in the background
 
