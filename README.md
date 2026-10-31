@@ -32,11 +32,11 @@ Every task gets matched to a capability tier. With no configuration of your own,
 | **Deep** | Opus, Sol | Ambiguous or difficult work — architecture, refactor planning, security analysis, tradeoffs |
 | **Strongest** | Fable | Highest-stakes or hardest problems — costly-to-reverse decisions, final verification |
 
-Quality comes first: when a task sits between two tiers, the stronger one wins. Smart Delegate only recommends the model; the host environment's own delegation instructions decide how the agent is launched. Any config file you create (project or user-wide) replaces these defaults entirely.
+Quality comes first: when a task sits between two tiers, the stronger one wins. Smart Delegate selects the model *and* launches the worker: a profile with an `invocation` is run through that command (for example `codex exec` or `opencode run`), and a profile without one falls back to the host environment's own delegation tools. Any config file you create (project or user-wide) replaces these defaults entirely.
 
 ### Configuration
 
-Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks is kept exactly.
+Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks are kept exactly. Claude Code runs that command while loading the skill; hosts that do not execute commands inside skill files (OpenCode, for example) instruct the agent to run the loader itself, so the same routing table is available in every host.
 
 ```yaml
 models:
@@ -134,12 +134,21 @@ This is the core principle. The cost difference between capability profiles is s
 
 ### Subagent Spawning
 
-The skill instructs the host agent to delegate when work is:
+The reasoning tier plans and judges; delegates execute. Delegation is the default, not the
+exception, and a task being small is never a reason to execute it inline:
 
+- **Executor work** — installing or downloading dependencies, running a command, build, or test,
+  locating where something is defined, writing code from an agreed shape, repeating one mechanical
+  edit across files
 - **Parallelizable** — multiple independent tasks get spawned simultaneously
 - **Exploratory** — reading 3+ files to answer a question
 - **Context-heavy** — results would pollute the main conversation with noise
 - **Isolatable** — clear inputs and outputs, no user interaction needed
+
+Delegation overhead is never a reason to keep executor work inline: pick the cheapest profile
+that can do it. A one-line task is still a delegation, and it goes to the cheapest tier. The
+reasoning tier keeps the work that needs reasoning: deciding what to do, writing the assignment,
+judging the result, and talking to the user.
 
 ## Installation
 
@@ -185,6 +194,10 @@ claude --plugin-dir ./smart-delegate
 ## Usage
 
 The skill auto-triggers when the host agent is about to:
+- Install or download a dependency, tool, or package
+- Run a command, build, test, or linter
+- Find where something is defined, or list usages
+- Write code, tests, scripts, or documentation
 - Explore multiple files across a codebase
 - Run code reviews
 - Perform research tasks
@@ -204,6 +217,7 @@ You can also invoke it explicitly:
 - "Search for `DatabaseConnection` in the codebase"
 - "Extract all environment variables from this config"
 - "Convert this JSON schema to TypeScript types"
+- "Install the missing dependency and confirm the build passes"
 
 ### Focused tier
 - "How does the authentication middleware work?"

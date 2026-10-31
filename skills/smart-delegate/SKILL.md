@@ -1,20 +1,23 @@
 ---
 name: smart-delegate
 description: >
-  Quality-first delegation that routes independent work to suitable agents or models without
-  assuming a particular provider. Use for multi-file exploration, reviews, research, parallel
-  work, or when the user asks to delegate or use agents.
+  Routes work to the cheapest capable agent or model and delegates execution instead of doing it
+  inline. Use for installing or downloading dependencies, running commands, builds, or tests,
+  finding where something is defined, writing code, tests, or docs, multi-file exploration,
+  reviews, research, and any parallel or multi-step work, or when the user asks to delegate or
+  use agents.
 allowed-tools: Bash(python3 *load-config.py*)
 ---
 
 # Smart Delegate
 
-Delegate focused work when doing so improves quality, speed, or context isolation. Quality comes
-first: pick the least expensive model that can reliably complete the task, and prefer the more
-capable one when uncertain. A weak answer from a cheaper model costs more in rework than the
-stronger model would have.
+Delegate the work. This skill exists so the reasoning tier spends its tokens on reasoning and
+delegates the rest to the cheapest model that can reliably do it. Quality comes first: pick the
+least expensive model that can reliably complete the task, and prefer the more capable one when
+uncertain. A weak answer from a cheaper model costs more in rework than the stronger model would
+have.
 
-This skill recommends which model suits an assignment. When the selected profile has an
+This skill selects the model for an assignment and launches it. When the selected profile has an
 `invocation`, follow it as the delegation mechanism (for example a CLI such as `codex` or
 `opencode`). Otherwise use the host environment's own delegation tools. Run slow invocations in the
 background with a time limit.
@@ -23,15 +26,27 @@ background with a time limit.
 
 Every time this skill is invoked, the active configuration is loaded by
 `scripts/load-config.py` and injected below with YAML comments removed. Use only this injected
-text. Do not read the configuration files yourself, and do not ask the user to paste them.
+text, or the loader's own output when the host did not run the command. Do not read the
+configuration files yourself, and do not ask the user to paste them.
 
 !`python3 "${CLAUDE_SKILL_DIR}/scripts/load-config.py"`
+
+If that line is still visible as text, the host did not run it. Run the loader yourself and use its
+output as the active configuration:
+
+    python3 <this skill's directory>/scripts/load-config.py
+
+The loader lives next to this file, so the directory is the one holding this SKILL.md. Common
+locations: `~/.agents/skills/smart-delegate/scripts/`, `~/.config/opencode/skills/smart-delegate/scripts/`,
+`~/.claude/skills/smart-delegate/scripts/`. Run it with no arguments to print the active
+configuration, or with `--check` to validate it. Never guess flags, and never ask the user to paste
+the configuration.
 
 The script uses the first file found and does not merge: `.smart-delegate/config.yaml` in the
 current project, then `~/.config/smart-delegate/config.yaml`, then the bundled
 [config.yaml](config.yaml) defaults (four tiers: Fast, Focused, Deep, Strongest, each listing
-preferred model names). If nothing is injected above, route using the models available in the
-environment.
+preferred model names). With no injected text and no configuration file, route using the models
+and delegation tools available in the environment.
 
 When you delegate, pass the selected profile's `invocation` text verbatim in the assignment, along
 with its `description` when it helps the delegate. Do this on every delegation, not only the first.
@@ -122,20 +137,32 @@ environment's normal delegation mechanism with the selected model. Never invent 
 model or tool. If a configured invocation cannot be used, select the next suitable profile or use
 the environment's normal delegation mechanism.
 
-## Decide when to delegate
+## Delegate the work, do not do the work
 
-Delegate when at least one of these applies:
+The agent running this skill is the reasoning tier. It decides what to do, writes the assignment,
+judges what comes back, and talks to the user. Execution belongs to a delegate.
 
-- Two or more independent tasks can run in parallel.
-- Exploration requires reading several files or sources and returning a synthesis.
-- A focused review benefits from an isolated context.
-- The task has clear inputs and outputs and does not need user interaction.
+Delegate by default. This is executor work, however small:
 
-Work inline when delegation overhead exceeds the likely benefit, the result is needed before any
-other work can proceed, or the task requires user dialogue.
+- installing, downloading, or configuring a dependency, tool, or package
+- running a build, test, lint, format, or any other command to produce a result
+- finding where something is defined, listing usages, tracing a call path
+- writing code, tests, scripts, or documentation from a decided shape or plan
+- applying a change that has already been decided
+- repeating one mechanical operation across many files
 
-When several independent tasks exist, launch them together when the environment supports it. Give
-each delegate a bounded assignment and ask for conclusions or artifacts rather than raw context.
+Keep these yourself:
+
+- anything that needs the user: a question, a confirmation, a report
+- deciding what to do, writing the assignment, and judging the delegate's result
+- reading just enough to write that assignment
+
+Delegation overhead is never a reason to keep executor work inline. Pick the cheapest profile that
+can do it instead. A one-line task is still a delegation, and it goes to the cheapest tier.
+
+When several independent assignments exist, launch them together when the environment supports it.
+Give each delegate a bounded assignment and ask for conclusions or artifacts rather than raw
+context.
 
 ## Route work
 
@@ -146,10 +173,15 @@ lower.
 
 Typical routing signals:
 
-- Lookups, exploration, and transformations need little judgment (Fast).
-- Bounded implementation, diagnosis, review, and synthesis with clear instructions (Focused).
+- Installs, downloads, command runs, lookups, exploration, and transformations need little
+  judgment (Fast). This is the default tier for mechanical work, not the exception.
+- Bounded implementation from a decided shape, diagnosis, review, and synthesis with clear
+  instructions (Focused).
 - Architecture, ambiguity, security, and tradeoffs need deeper judgment (Deep).
 - Costly-to-reverse or highest-stakes decisions justify the strongest tier (Strongest).
+
+Escalate one tier when a delegate returns a wrong or shallow result. Do not escalate because a
+task looked small: smallness is not a reason to pick a stronger model.
 
 Configuration expresses user preferences but does not override availability, safety constraints,
 or explicit instructions in the current request.

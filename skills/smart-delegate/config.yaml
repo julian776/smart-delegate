@@ -12,10 +12,12 @@ models:
     priority: 10
     description: >
       Use for simple, low-risk work with a single verifiable answer and little judgment: locating
-      files, exact searches, listing usages, extracting or reformatting data, summarizing a small
-      input, and repetitive boilerplate. Ideal for exploration that returns a short list of
-      findings. Do not use when the answer needs interpretation, when a wrong result would be hard
-      to notice, or when instructions are vague.
+      files, finding where a symbol is defined, exact searches, listing usages, installing or
+      downloading dependencies, running a build, test, or other command, extracting or reformatting
+      data, summarizing a small input, and repetitive boilerplate. This is the default tier for
+      mechanical work, however small the task is. Ideal for exploration that returns a short list
+      of findings. Do not use when the answer needs interpretation, when a wrong result would be
+      hard to notice, or when instructions are vague.
 
   - title: Focused
     model: [Sonnet, Terra]

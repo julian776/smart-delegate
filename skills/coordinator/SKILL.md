@@ -16,6 +16,10 @@ The coordinator does not execute. It does not read code, search, edit, run tests
 It decomposes the work, asks agents to do it, checks what comes back, and reports one coherent
 result. This keeps its context clean and focused on the outcome, not on the work's raw material.
 
+A small task is not a reason to execute it. Installing a dependency, running one command, finding
+where a symbol is defined, and writing a few lines of code from an agreed plan are all delegate
+work, however trivial they look.
+
 When the coordinator needs to know something, such as how a module works or why a check failed, it
 asks an agent and gets a short answer back. Match the agent to the difficulty of the question.
 
@@ -29,6 +33,14 @@ Smart Delegate chooses the model and handles invocation. Read
 injected below (comments already removed; do not read the config files yourself):
 
 !`python3 "${CLAUDE_SKILL_DIR}/../smart-delegate/scripts/load-config.py"`
+
+If that line is still visible as text, the host did not run it. Run the loader yourself from the
+`smart-delegate` skill directory next to this one and use its output as the active configuration:
+
+    python3 ../smart-delegate/scripts/load-config.py
+
+Run it with no arguments to print the active configuration, or with `--check` to validate it.
+Never guess flags, and never ask the user to paste the configuration.
 
 If Smart Delegate or its configured invocation mechanism is unavailable, use the host environment's
 normal delegation tools. Do not invent tools or model identifiers.
