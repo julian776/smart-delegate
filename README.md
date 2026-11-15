@@ -96,12 +96,45 @@ plugin preserves the parsed multiline value when injecting it into an assignment
 #### Example: multiple providers
 
 [`examples/multi-provider.config.yaml`](examples/multi-provider.config.yaml) is a copy-and-edit
-example for running Claude as the host while delegating some work to **Codex CLI** (`codex exec`,
-including `codex exec review`) and **OpenCode** (`opencode run`). It documents how to invoke each
-one: assignment on stdin or attached file, model selection, read-only defaults, where results
-appear, and what to do on failure. It is not a default and is never loaded automatically; copy it
-to `.smart-delegate/config.yaml` or `~/.config/smart-delegate/config.yaml` and replace the
-`<model>` placeholders with models you have access to.
+example with explicit reader and writer profiles. It uses OpenCode and Codex CLI invocations,
+with native Claude workers as fallback. The host does not need to be Claude for external CLI
+routes; native Claude fallback requires a host that can actually launch those workers.
+
+| Role | Fast | Focused | Deep | Deep fallback |
+|------|------|---------|------|---------------|
+| Reader | OpenCode MiniMax | OpenCode DeepSeek | Codex | Native Claude Sonnet |
+| Writer | OpenCode MiniMax | OpenCode DeepSeek | Codex | Native Claude Sonnet |
+
+Readers investigate, diagnose, plan, and review without project edits. Writers implement within
+assigned paths and run relevant checks. The example uses OpenCode `plan` versus `build`, and
+Codex `read-only` versus `workspace-write`. These controls differ: an agent's plan policy is not
+an operating-system sandbox. Checks that generate build artifacts may need a writer in an
+isolated worktree. Role names are routing guidance in existing `title` and `description` fields;
+there are no new `reader` or `writer` configuration keys.
+
+Choose the role first, then a capable tier. Independent review selects a reader other than the
+implementer, preferably from another model family for substantive changes. Both review and QA
+are enabled in this example; bundled defaults leave them optional. A routine batch does not need
+a strongest-model pass.
+
+The example is never loaded automatically. After installing the skills, copy it from a checkout:
+
+```bash
+mkdir -p ~/.config/smart-delegate
+cp examples/multi-provider.config.yaml ~/.config/smart-delegate/config.yaml
+```
+
+Preserve any existing personal config before copying. Replace `<minimax-provider/model>`,
+`<deepseek-provider/model>`, and `<codex-model>` with IDs available to your accounts. Authenticate
+the CLIs separately; installing skills does not grant provider access. Console, Go, and direct
+OpenCode providers can have different IDs and billing. Inspect `opencode models` and the CLI's
+help before using a route. This example has not been validated with live cross-provider calls.
+
+For project-only routing, copy to `.smart-delegate/config.yaml` instead. That project file takes
+precedence over the entire personal file. Keep personal routing outside the installed skill so
+skill updates do not replace your preferences. Run the installed `smart-delegate` skill's
+`scripts/load-config.py --check` from the target project to check the selected file, YAML, model
+titles, and CLI presence. This check does not verify authentication, model access, or execution.
 
 #### Complex invocations
 
@@ -172,7 +205,7 @@ exception, and a task being small is never a reason to execute it inline:
 - **Executor work** — installing or downloading dependencies, running a command, build, or test,
   locating where something is defined, writing code from an agreed shape, repeating one mechanical
   edit across files
-- **Parallelizable** — multiple independent tasks get spawned simultaneously
+- **Parallelizable** — independent tasks run concurrently within the owner's capacity limit
 - **Exploratory** — reading 3+ files to answer a question
 - **Context-heavy** — results would pollute the main conversation with noise
 - **Isolatable** — clear inputs and outputs, no user interaction needed
@@ -237,10 +270,26 @@ The skill auto-triggers when the host agent is about to:
 
 You can also invoke it explicitly:
 
+For the Claude Code plugin:
+
 ```
 /smart-delegate:smart-delegate
 /smart-delegate:coordinator
 ```
+
+For skills.sh installations, invoke `smart-delegate` or `coordinator` using the host's skill
+syntax (for example `$coordinator` in Codex). Plugin-prefixed commands apply to the Claude plugin.
+
+For ongoing ownership, an example request is:
+
+> Own this project's small, safe fixes. Delegate implementation, independently review each
+> change, and verify checks and CI on the final revision. Deliver three related tasks per batch,
+> with no more than three workers active. I will review the verified batch and handle deployment.
+
+The owner keeps assignments and evidence in a project-local ledger, such as
+`.smart-delegate/coordination.md`, and pauses at the final-approval checkpoint. A missing worker
+route or unavailable CI is reported as a blocker, not silently replaced by inline implementation
+or a claim that checks passed.
 
 ## Routing Examples
 
@@ -283,6 +332,8 @@ Smart Delegate **stacks** with compression tools. Use Caveman for output style +
 
 ```
 smart-delegate/
+├── examples/
+│   └── multi-provider.config.yaml # Reader/writer routing example
 ├── .claude-plugin/
 │   └── plugin.json          # Claude Code plugin manifest
 └── skills/

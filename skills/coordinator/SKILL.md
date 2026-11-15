@@ -101,8 +101,9 @@ invoked, report the delegation blocker rather than silently implementing the tas
 
 Every delegated call that can take more than a few seconds runs in the background (for example
 Bash `run_in_background`, or a background subagent), so the user can keep talking to the
-coordinator and queue more work meanwhile. Launch independent assignments together, do not poll,
-and continue when completion notifications arrive. Give long external CLI calls a time limit so a
+coordinator and queue more work meanwhile. Launch independent assignments within the active
+worker limit and continue on completion notifications; use bounded status checks only when the
+invocation has no notification mechanism. Give long external CLI calls a time limit so a
 hung worker cannot stall the run.
 
 ## Coordinate the work

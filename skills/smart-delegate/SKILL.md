@@ -192,6 +192,13 @@ context.
 
 ## Route work
 
+When profiles distinguish Reader and Writer, select the role before the capability tier.
+Readers inspect, investigate, plan, and review without project edits or mutating commands.
+Writers edit assigned paths and run relevant checks; checks that write artifacts need suitable
+write permissions or an isolated worktree. Respect the invocation's actual permission controls:
+role labels alone do not enforce a sandbox. Independent review uses a separate reader worker.
+These roles use existing titles and descriptions, not additional configuration keys.
+
 Compare the task against any configured profile information. Consider ambiguity, breadth, required
 judgment, risk, and the cost of a weak answer. Choose the lowest-cost profile that is clearly
 capable. If uncertain between candidates, choose the more capable one even when its priority is
