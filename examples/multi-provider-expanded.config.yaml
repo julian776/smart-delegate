@@ -1,0 +1,261 @@
+# Expanded multi-provider example with 14 explicit reader/writer profiles.
+# Derived from a personal workflow; concrete model IDs researched 2026-11-15.
+# Not loaded automatically and not validated with live cross-provider calls.
+# Copy to ~/.config/smart-delegate/config.yaml after checking model access.
+# A project .smart-delegate/config.yaml overrides this entire personal configuration.
+# OpenCode Console (pay as you go) is assumed; Go/direct providers have different IDs/billing.
+# Prerequisites on every computer: authenticated opencode, claude, and codex CLIs.
+# Confirm current models and CLI flags; dated IDs may need updating for your accounts.
+# Roles and tiers use existing description fields, not new parser fields or sandbox guarantees.
+# Reader = no project edits; Writer = assigned files plus checks. Choose role before tier.
+# Route small mechanical tasks to MiniMax, routine tasks to DeepSeek, and escalate on ambiguity,
+# risk, or demonstrated capability failure. Priorities break ties among suitable profiles.
+# Do not call every provider per task. Batch size/concurrency come from Coordinator.
+# Setup and comparison with the compact example: ../README.md#examples-multiple-providers
+models:
+- title: Fast Reader — MiniMax
+  priority: 10
+  description: Use only for small, mechanical, low-risk lookups, extraction, and command-result summaries.
+    Single clear outcome and easy verification. No project edits. For diagnosis, interpretation, or multi-file
+    implementation use Focused instead.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/minimax-m3; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent plan --model opencode/minimax-m3
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Focused Reader — DeepSeek
+  priority: 20
+  description: Default for routine code investigation, tracing behavior, diagnosis, and routine review.
+    Read only. Excludes architecture decisions, security-sensitive changes, and unresolved cross-system
+    ambiguity.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/deepseek-v4.1-flash; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent plan --model opencode/deepseek-v4.1-flash
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Deep Reader — DeepSeek Pro
+  priority: 30
+  description: Use for difficult investigation or review with clear scope but substantial reasoning, or
+    a capability failure from Focused. Read only. For an independent cross-provider opinion or unresolved
+    design risk use Claude/Codex.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/deepseek-v4-pro; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent plan --model opencode/deepseek-v4-pro
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Deep Reader — Claude Sonnet
+  priority: 40
+  description: Use for difficult analysis or independent review requiring a different family from DeepSeek,
+    or when DeepSeek Pro is unavailable or insufficient. Read only. Do not choose merely because Claude
+    is the host.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      claude -p --model claude-sonnet-5-5 --permission-mode plan --output-format json
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Read and report only; do not modify project files or run mutating commands.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Advanced Reader — Codex Sol
+  priority: 50
+  description: Use for complex cross-cutting reasoning, adjudication, or independent review, especially
+    after cheaper capable routes fail. Read only. Avoid routine work.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m gpt-6.1-sol -s read-only --ephemeral -
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Read and report only; do not modify project files or run mutating commands.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Fast Writer — MiniMax
+  priority: 10
+  description: Use only for small, mechanical, low-risk edits with a decided shape. Single clear outcome
+    and easy verification. May edit assigned files. For diagnosis, interpretation, or multi-file implementation
+    use Focused instead.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/minimax-m3; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent build --model opencode/minimax-m3
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Write only assigned paths; finish relevant checks.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Focused Writer — DeepSeek
+  priority: 20
+  description: Default for routine implementation from an agreed plan, documentation, and contained fixes.
+    May edit assigned files. Excludes architecture decisions, security-sensitive changes, and unresolved
+    cross-system ambiguity.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/deepseek-v4.1-flash; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent build --model opencode/deepseek-v4.1-flash
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Write only assigned paths; finish relevant checks.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Deep Writer — DeepSeek Pro
+  priority: 30
+  description: Use for difficult implementation with clear scope but substantial reasoning, or a capability
+    failure from Focused. May edit assigned files. For an independent cross-provider opinion or unresolved
+    design risk use Claude/Codex.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
+    and `opencode models` once per run; confirm the exact provider/model ID is available.
+    The proposed Console route is opencode/deepseek-v4-pro; do not silently substitute Go or another
+    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    Pass the full assignment via stdin to:
+      opencode run --agent build --model opencode/deepseek-v4-pro
+    Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
+    Write only assigned paths; finish relevant checks.
+    Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
+    controls; if unattended permissions block execution, report the blocker. Return status,
+    revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
+    and fallback reason before selecting the next suitable configured profile.
+- title: Deep Writer — Claude Sonnet
+  priority: 40
+  description: Use for difficult implementation requiring a different family from DeepSeek, or when DeepSeek
+    Pro is unavailable or insufficient. May edit assigned files. Do not choose merely because Claude is
+    the host.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      claude -p --model claude-sonnet-5-5 --permission-mode acceptEdits --output-format json
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Write only assigned paths and finish relevant checks.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Advanced Writer — Codex Sol
+  priority: 50
+  description: Use for complex cross-cutting implementation and debugging, especially after cheaper capable
+    routes fail. May edit assigned files. Avoid routine work.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m gpt-6.1-sol -s workspace-write --ephemeral -
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Write only assigned paths and finish relevant checks.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Expert Reader — Claude Opus
+  priority: 60
+  description: Use for unresolved architecture, security, or subtle review questions after Deep/Advanced
+    evidence is insufficient. Read only; not a routine final-verification tax.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      claude -p --model claude-opus-5-5 --permission-mode plan --output-format json
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Read and report only; do not modify project files or run mutating commands.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Expert Writer — Claude Opus
+  priority: 60
+  description: Use for exceptionally difficult in-scope implementation after Advanced capability failures.
+    May edit assigned files. Not routine work.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      claude -p --model claude-opus-5-5 --permission-mode acceptEdits --output-format json
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Write only assigned paths and finish relevant checks.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Strongest Reader — Codex Astra
+  priority: 70
+  description: Reserve for consequential unresolved decisions or adjudication after lower tiers fail.
+    Read only. No automatic strongest-tier pass for ordinary batches.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m gpt-6-astra -s read-only --ephemeral -
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Read and report only; do not modify project files or run mutating commands.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+- title: Strongest Writer — Codex Astra
+  priority: 70
+  description: Reserve for hardest in-scope implementation after lower tiers fail with evidence. May edit
+    assigned files; no broader authority.
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m gpt-6-astra -s workspace-write --ephemeral -
+    Use the external CLI even when the host is a different provider. Run in the background with
+    a 20-minute timeout. Retain stdout and stderr and the session/process handle.
+    Write only assigned paths and finish relevant checks.
+    No recursive delegation, merge, push, deployment, permission bypass, or scope expansion.
+    For Claude, plan mode is an agent policy, not an OS sandbox; acceptEdits does not authorize
+    arbitrary shell commands. If permissions block unattended execution, report the blocker.
+    Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
+    reason before falling back to another configured profile; never silently change models.
+review:
+  enabled: true
+  description: |-
+    Require an independent reader for each change and review the final revision after corrections.
+    Use Focused Reader DeepSeek for small MiniMax changes. For DeepSeek implementation use
+    Claude Sonnet Reader, escalating to Codex Sol/Opus only for substantive complexity or unresolved
+    findings. Never use the implementing worker as its reviewer. Report evidence-backed findings
+    and revision reviewed; no edits by reviewer. Route through the selected reader invocation.
+qa:
+  enabled: true
+  description: |-
+    Use Fast Reader MiniMax for known non-mutating check commands; use Focused Reader DeepSeek
+    for behavioral interpretation. If a check writes build artifacts, assign a writer in an isolated
+    worktree instead. Verify acceptance criteria and integration on the final revision. Record actual
+    CI run, revision, terminal status and relevant logs when CI is requested. Pending, inaccessible,
+    or failing CI is not ready. Corrections go back to the writer; rerun affected checks.

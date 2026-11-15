@@ -93,20 +93,37 @@ All `description` and `invocation` parameters accept single-line or multiline YA
 when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
 plugin preserves the parsed multiline value when injecting it into an assignment.
 
-#### Example: multiple providers
+#### Examples: multiple providers
 
-[`examples/multi-provider.config.yaml`](examples/multi-provider.config.yaml) is a copy-and-edit
-example with explicit reader and writer profiles. It uses OpenCode and Codex CLI invocations,
-with native Claude workers as fallback. The host does not need to be Claude for external CLI
-routes; native Claude fallback requires a host that can actually launch those workers.
+Choose one complete configuration; examples are alternatives, not files to merge:
 
-| Role | Fast | Focused | Deep | Deep fallback |
-|------|------|---------|------|---------------|
-| Reader | OpenCode MiniMax | OpenCode DeepSeek | Codex | Native Claude Sonnet |
-| Writer | OpenCode MiniMax | OpenCode DeepSeek | Codex | Native Claude Sonnet |
+| Example | Profiles | When to use |
+|---------|----------|-------------|
+| [Compact](examples/multi-provider.config.yaml) | 8 reader/writer profiles with model placeholders | Start with a small routing pool and native Claude fallback. |
+| [Expanded](examples/multi-provider-expanded.config.yaml) | 14 reader/writer profiles with concrete model IDs | Reuse a larger pool across computers, invoking OpenCode, Claude, and Codex through their CLIs. |
+
+The compact example routes both readers and writers through Fast OpenCode MiniMax, Focused
+OpenCode DeepSeek, Deep Codex, and Deep fallback native Claude Sonnet. The host does not need
+to be Claude for external CLI routes; native Claude fallback requires a host that can launch it.
+
+The expanded example adds more escalation choices and uses external CLIs for every profile:
+
+| Tier | Reader and writer model | Invocation |
+|------|-------------------------|------------|
+| Fast | MiniMax M3 | OpenCode |
+| Focused | DeepSeek V4.1 Flash | OpenCode |
+| Deep | DeepSeek V4 Pro | OpenCode |
+| Deep, different-family fallback | Claude Sonnet 5.5 | Claude CLI |
+| Advanced | GPT-6.1 Sol | Codex CLI |
+| Expert | Claude Opus 5.5 | Claude CLI |
+| Strongest | GPT-6 Astra | Codex CLI |
+
+Its concrete IDs reflect research on November 15, 2026, not a guarantee of current account
+access. This is a proposed escalation policy, not a benchmark ranking. Keep ordinary work on
+capable lower tiers; the larger pool does not require more agents or calls per task.
 
 Readers investigate, diagnose, plan, and review without project edits. Writers implement within
-assigned paths and run relevant checks. The example uses OpenCode `plan` versus `build`, and
+assigned paths and run relevant checks. Both examples use OpenCode `plan` versus `build`, and
 Codex `read-only` versus `workspace-write`. These controls differ: an agent's plan policy is not
 an operating-system sandbox. Checks that generate build artifacts may need a writer in an
 isolated worktree. Role names are routing guidance in existing `title` and `description` fields;
@@ -114,21 +131,45 @@ there are no new `reader` or `writer` configuration keys.
 
 Choose the role first, then a capable tier. Independent review selects a reader other than the
 implementer, preferably from another model family for substantive changes. Both review and QA
-are enabled in this example; bundled defaults leave them optional. A routine batch does not need
+are enabled in both examples; bundled defaults leave them optional. A routine batch does not need
 a strongest-model pass.
 
-The example is never loaded automatically. After installing the skills, copy it from a checkout:
+Neither example is loaded automatically. From a checkout, copy your chosen example to
+`~/.config/smart-delegate/config.yaml`, preserving any existing configuration first.
+
+For a new computer without a checkout, this Bash recipe installs both skills globally and
+downloads the expanded configuration. Change `routing_example` to `multi-provider.config.yaml`
+for the compact version. It backs up any existing config and downloads before replacing it:
 
 ```bash
-mkdir -p ~/.config/smart-delegate
-cp examples/multi-provider.config.yaml ~/.config/smart-delegate/config.yaml
+npx skills add https://github.com/julian776/smart-delegate -g --skill smart-delegate
+npx skills add https://github.com/julian776/smart-delegate -g --skill coordinator
+
+(
+  set -e
+  routing_example=multi-provider-expanded.config.yaml
+  routing_dir="$HOME/.config/smart-delegate"
+  mkdir -p "$routing_dir"
+  routing_download=$(mktemp "$routing_dir/config.download.XXXXXX")
+  trap 'rm -f "$routing_download"' EXIT
+  curl --fail --location \
+    "https://raw.githubusercontent.com/julian776/smart-delegate/main/examples/$routing_example" \
+    --output "$routing_download"
+  if [ -e "$routing_dir/config.yaml" ]; then
+    routing_backup=$(mktemp "$routing_dir/config.backup.XXXXXX")
+    cp -p "$routing_dir/config.yaml" "$routing_backup"
+  fi
+  mv "$routing_download" "$routing_dir/config.yaml"
+)
 ```
 
-Preserve any existing personal config before copying. Replace `<minimax-provider/model>`,
-`<deepseek-provider/model>`, and `<codex-model>` with IDs available to your accounts. Authenticate
-the CLIs separately; installing skills does not grant provider access. Console, Go, and direct
-OpenCode providers can have different IDs and billing. Inspect `opencode models` and the CLI's
-help before using a route. This example has not been validated with live cross-provider calls.
+Inspect and adapt the downloaded configuration before invoking the skills. For the compact
+example, replace `<minimax-provider/model>`, `<deepseek-provider/model>`, and `<codex-model>`.
+For the expanded example, confirm the concrete IDs are available to your accounts. Install and
+authenticate the required CLIs separately on each computer; installing skills grants no provider
+access and copies no credentials. Console, Go, and direct OpenCode providers can have different
+IDs and billing. Inspect `opencode models` and each CLI's help before using a route. Neither
+example has been validated with live cross-provider calls.
 
 For project-only routing, copy to `.smart-delegate/config.yaml` instead. That project file takes
 precedence over the entire personal file. Keep personal routing outside the installed skill so
@@ -183,13 +224,15 @@ spawn that model natively. Native agents have no automatic preference. Capabilit
 priority determine selection; failed routes and fallbacks are recorded rather than silently
 replaced. Provider diversity does not require redundant calls on every task.
 
-The multi-provider example separates **Reader** (investigation and review) from **Writer**
-(assigned edits and checks) at each tier. It routes small mechanical tasks to OpenCode MiniMax,
-routine work to OpenCode DeepSeek, and complex work to Codex, with native Claude fallback.
+Both multi-provider examples separate **Reader** (investigation and review) from **Writer**
+(assigned edits and checks) at each tier. They route small mechanical tasks to OpenCode MiniMax,
+routine work to OpenCode DeepSeek, and complex work to higher-capability profiles. The compact
+example uses native Claude fallback; the expanded example invokes Claude through its CLI.
 Select the role first, then the lowest capable tier; reader and writer descriptions guide routing
 and do not enforce filesystem permissions. Independent review selects a separate reader worker.
-It requires installed, authenticated CLIs and real model IDs in place of placeholders. Installing
-the plugin alone does not configure access to other providers.
+Both require installed, authenticated CLIs and accessible model IDs. Replace the compact
+example's placeholders or verify the expanded example's concrete IDs. Installing the plugin alone
+does not configure access to other providers.
 
 ### The Upgrade Rule
 
@@ -333,7 +376,8 @@ Smart Delegate **stacks** with compression tools. Use Caveman for output style +
 ```
 smart-delegate/
 ├── examples/
-│   └── multi-provider.config.yaml # Reader/writer routing example
+│   ├── multi-provider.config.yaml # Compact reader/writer routing example
+│   └── multi-provider-expanded.config.yaml # Expanded pool with concrete model IDs
 ├── .claude-plugin/
 │   └── plugin.json          # Claude Code plugin manifest
 └── skills/
