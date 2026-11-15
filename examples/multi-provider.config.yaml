@@ -1,86 +1,128 @@
-# Example: Claude is the host and coordinator; Codex CLI and OpenCode run some of the delegated work.
+# Multi-provider reader/writer example; not loaded automatically.
+# Copy to .smart-delegate/config.yaml or ~/.config/smart-delegate/config.yaml.
+# A selected config replaces the bundled defaults entirely (no merging).
 #
-# NOT a default. Copy it to .smart-delegate/config.yaml (one project) or
-# ~/.config/smart-delegate/config.yaml (all projects). A config file replaces the bundled
-# defaults entirely.
+# Replace placeholders with accessible model IDs. Suggested starting points:
+# MiniMax M3 for small mechanical tasks; DeepSeek V4.1 Flash for routine work;
+# GPT-6.1 Sol for complex work. Confirm IDs and access with each provider.
+# OpenCode Console examples: opencode/minimax-m3 and opencode/deepseek-v4.1-flash.
+# Go and direct-provider routes differ; never silently change billing providers.
+# Prerequisites: authenticated opencode and codex CLIs; native Claude workers for fallback.
 #
-# Prerequisites: `codex` and `opencode` installed and authenticated. Tested with
-# codex-cli 0.160 and opencode 1.18. Replace the
-# <placeholders> with models you have: run `opencode models` to list OpenCode's
-# provider/model IDs; Codex accepts any model name your account supports (`codex exec -m`).
-#
-# Safety defaults used below: Codex runs in the read-only sandbox for analysis and
-# workspace-write only for edits; OpenCode runs with its read-only `plan` agent for analysis and
-# never with `--auto` unless you add it yourself.
+# Choose Reader or Writer FIRST, then the lowest capable tier. Priority breaks ties
+# among suitable profiles. Reader/Writer are description guidance using the existing
+# schema, not new scheduler fields or an enforced filesystem boundary.
+# Independent review uses a different worker; prefer another family for substantive changes.
+# Do not call every provider on each task. All workers obey the owner's scope and batch limits.
+# Invocations are examples, not a claim of live cross-provider testing.
 models:
-  - title: Fast (Claude)
-    model: [Haiku]
-    priority: 10
-    description: >
-      Simple, low-risk work with one verifiable answer: file discovery, exact searches, listing
-      usages, extraction, and boilerplate. Runs as a native Claude subagent.
-
-  - title: Focused (Claude)
-    model: [Sonnet]
-    priority: 20
-    description: >
-      Well-scoped implementation, tests, contained bug diagnosis, and documentation when the
-      assignment has clear instructions and a defined outcome.
-
-  - title: Focused (OpenCode)
-    priority: 25
-    description: >
-      Well-scoped, read-only investigation or second-opinion analysis where a different model
-      family adds value, or when Claude capacity should be saved. Returns findings as text.
-    invocation: |
-      Run from the project root, passing the complete assignment as the message (no files needed):
-        opencode run --agent plan -m <provider/model> "<assignment>" 2>/dev/null
-      or pipe a long assignment on stdin:
-        opencode run --agent plan -m <provider/model> 2>/dev/null <<'EOF'
-        <assignment>
-        EOF
-      - `-m` uses the `provider/model` format; list valid IDs with `opencode models`. Pick a paid or
-        configured model: some free models hang without output, so always run with a time limit.
-      - `--agent plan` is OpenCode's read-only agent: it analyzes and proposes changes but does not
-        edit files. Do not pass `--auto` (it auto-approves permissions).
-      - The final answer is on stdout; the progress banner goes to stderr (hidden by `2>/dev/null`).
-      - If it fails or times out, report the failure and fall back to a Claude profile.
-
-  - title: Deep (Codex)
-    priority: 30
-    description: >
-      Hard, ambiguous, or cross-cutting work needing sustained reasoning: architecture, difficult
-      debugging, refactor planning, and security analysis, especially as an independent second
-      opinion on Claude's own conclusions.
-    invocation: |
-      Run from the project root, giving the assignment on stdin (no files needed):
-        codex exec -m <model> -s read-only --ephemeral - 2>/dev/null <<'EOF'
-        <assignment>
-        EOF
-      - The final answer is on stdout; progress goes to stderr (hidden by `2>/dev/null`).
-      - `-s read-only` suits analysis. Use `-s workspace-write` only when the assignment explicitly
-        asks Codex to edit files, and name the allowed paths in the assignment.
-      - Never use `--dangerously-bypass-approvals-and-sandbox`.
-      - `-m <model>` is optional; omit it to use the model from `~/.codex/config.toml`.
-      - If it fails or times out, report the failure and fall back to a Claude profile.
-
-  - title: Deep (Claude)
-    model: [Opus]
-    priority: 35
-    description: >
-      Hard design and reasoning work, and the default choice when Codex is unavailable. Also
-      suited to reviewing and integrating results from other agents.
-
+- title: Fast Reader (OpenCode MiniMax)
+  priority: 10
+  description: 'Reader: small exact lookups, extraction, and command-result summaries. Inspect and report
+    only; no project edits or mutating commands.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Confirm the configured
+    provider/model with `opencode models` and inspect `opencode run --help` before first use.
+    Pass the complete assignment on stdin:
+      opencode run --agent plan --model <minimax-provider/model>
+    Use an installed, authenticated provider route; Console, Go, and direct-provider IDs
+    and billing differ. Plan supports investigation; it is an agent policy, not an OS sandbox.
+    Run in the background with a time limit. Retain stdout, stderr, and session handle.
+    Do not use --auto or bypass permissions. Report permission blockers and failures;
+    record the reason before selecting the next suitable profile. Do not spawn workers.
+- title: Fast Writer (OpenCode MiniMax)
+  priority: 10
+  description: 'Writer: small mechanical edits from a decided plan, with easy verification. May edit only
+    assigned paths and run relevant checks.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Confirm the configured
+    provider/model with `opencode models` and inspect `opencode run --help` before first use.
+    Pass the complete assignment on stdin:
+      opencode run --agent build --model <minimax-provider/model>
+    Use an installed, authenticated provider route; Console, Go, and direct-provider IDs
+    and billing differ. Build permits edits; limit them to assigned paths.
+    Run in the background with a time limit. Retain stdout, stderr, and session handle.
+    Do not use --auto or bypass permissions. Report permission blockers and failures;
+    record the reason before selecting the next suitable profile. Do not spawn workers.
+- title: Focused Reader (OpenCode DeepSeek)
+  priority: 20
+  description: 'Reader: routine investigation, behavior tracing, diagnosis, and review. Inspect and report
+    only; no project edits or mutating commands.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Confirm the configured
+    provider/model with `opencode models` and inspect `opencode run --help` before first use.
+    Pass the complete assignment on stdin:
+      opencode run --agent plan --model <deepseek-provider/model>
+    Use an installed, authenticated provider route; Console, Go, and direct-provider IDs
+    and billing differ. Plan supports investigation; it is an agent policy, not an OS sandbox.
+    Run in the background with a time limit. Retain stdout, stderr, and session handle.
+    Do not use --auto or bypass permissions. Report permission blockers and failures;
+    record the reason before selecting the next suitable profile. Do not spawn workers.
+- title: Focused Writer (OpenCode DeepSeek)
+  priority: 20
+  description: 'Writer: routine bounded implementation, documentation, tests, and contained fixes. May
+    edit only assigned paths and run relevant checks.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Confirm the configured
+    provider/model with `opencode models` and inspect `opencode run --help` before first use.
+    Pass the complete assignment on stdin:
+      opencode run --agent build --model <deepseek-provider/model>
+    Use an installed, authenticated provider route; Console, Go, and direct-provider IDs
+    and billing differ. Build permits edits; limit them to assigned paths.
+    Run in the background with a time limit. Retain stdout, stderr, and session handle.
+    Do not use --auto or bypass permissions. Report permission blockers and failures;
+    record the reason before selecting the next suitable profile. Do not spawn workers.
+- title: Deep Reader (Codex)
+  priority: 30
+  description: 'Reader: difficult, ambiguous, or cross-cutting analysis, planning, and independent review.
+    Inspect and report only; no project edits or mutating commands.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m <codex-model> -s read-only --ephemeral -
+    Confirm model access in Codex; omit -m only when intentionally using its configured default.
+    Run in the background with a time limit and retain stdout, stderr, and process handle.
+    Inspect and report only.
+    Do not bypass sandbox/approvals or spawn workers. Record diagnostics and the reason
+    before falling back to the next suitable profile.
+- title: Deep Writer (Codex)
+  priority: 30
+  description: 'Writer: difficult, ambiguous, or cross-cutting implementation and debugging. May edit
+    only assigned paths and run relevant checks.'
+  invocation: |-
+    Run from the assigned project root or isolated worktree. Pass the complete assignment on stdin:
+      codex exec -m <codex-model> -s workspace-write --ephemeral -
+    Confirm model access in Codex; omit -m only when intentionally using its configured default.
+    Run in the background with a time limit and retain stdout, stderr, and process handle.
+    Edit only assigned paths and finish relevant checks.
+    Do not bypass sandbox/approvals or spawn workers. Record diagnostics and the reason
+    before falling back to the next suitable profile.
+- title: Deep fallback Reader (Claude)
+  priority: 35
+  description: 'Reader: difficult, ambiguous, or cross-cutting analysis, planning, and independent review.
+    Inspect and report only; no project edits or mutating commands. Use a native Claude worker when available;
+    this is a fallback, not a host preference.'
+  model:
+  - Sonnet
+- title: Deep fallback Writer (Claude)
+  priority: 35
+  description: 'Writer: difficult, ambiguous, or cross-cutting implementation and debugging. May edit
+    only assigned paths and run relevant checks. Use a native Claude worker when available; this is a
+    fallback, not a host preference.'
+  model:
+  - Sonnet
 review:
   enabled: true
-  description: |
-    Independent review of the completed change for correctness bugs and regressions. Prefer a
-    different model family than the one that wrote the code.
-  invocation: |
-    Run from the project root:
-      codex exec review --uncommitted -m <model> 2>/dev/null
-    (use `--base <branch>` instead of `--uncommitted` to review a whole branch, or `--commit <sha>`
-    for one commit). Prioritized findings with file and line references are printed on stdout. If
-    Codex fails, review with a Claude Deep profile instead.
-
-# QA is left disabled: enable it with `qa: {}` or add an invocation if you have a test runner.
+  description: |-
+    Review each change independently at its final revision. Use an appropriate Reader profile:
+    Focused DeepSeek for small MiniMax edits, Deep Codex or Claude fallback for substantive
+    DeepSeek changes. Never review your own implementation. Return prioritized findings
+    with file references and evidence, or explicitly report no findings. Do not edit files.
+    Select and follow the reader's invocation rather than forcing every review to one provider.
+qa:
+  enabled: true
+  description: |-
+    Verify acceptance criteria and relevant integration behavior at the final revision.
+    Use a Fast Reader for known non-mutating checks, Focused Reader for interpretation,
+    or an isolated Writer when checks create build artifacts. Return commands, results,
+    and evidence. Route fixes back to the assigned writer. When CI is requested, record
+    its run and revision and wait for its terminal result; pending or unavailable is not green.

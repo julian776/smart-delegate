@@ -48,6 +48,32 @@ current project, then `~/.config/smart-delegate/config.yaml`, then the bundled
 preferred model names). With no injected text and no configuration file, route using the models
 and delegation tools available in the environment.
 
+## Provider routing is execution routing
+
+Build one routing table from the active configuration for the run. Compare all suitable profiles,
+including external providers, before choosing a worker. The host's native agents are not preferred
+merely because they are easier to invoke. A configured external invocation is the execution path,
+not advice for a native agent to imitate that provider.
+
+For each assignment, select capability first, then configured priority among equally suitable
+profiles. Identify whether the profile uses a native agent or an external invocation. Invoke an
+external profile through its configured CLI/API directly when supported; a native launcher may
+start and monitor that invocation, but must not do the assignment itself or start a second copy.
+Do not require an external model ID to appear in the host's native model list. Resolve availability
+through the configured provider mechanism. Use only supported tools and permitted model overrides.
+
+Record selected profile, actual provider/model when known, invocation, and worker handle in the
+coordination ledger or result. Reuse availability findings within a run. If an invocation fails,
+preserve the diagnostic and record the reason before selecting the next suitable profile. Never
+silently replace a configured external worker with a host-native worker. Missing credentials,
+executables, or unresolved placeholders are availability failures, not permission to invent flags
+or model IDs. If no permitted route remains, report a blocker.
+
+Multiple providers do not imply calling every provider for every task. Honor configured preferences
+and use cross-provider review when requested or useful for independence. If priorities always favor
+a native profile, it can legitimately win every equally suitable task; explain that routing outcome
+rather than claiming provider diversity. Do not manufacture extra tasks to distribute calls.
+
 When you delegate, pass the selected profile's `invocation` text verbatim in the assignment, along
 with its `description` when it helps the delegate. Do this on every delegation, not only the first.
 For enabled `review` and `qa` stages, pass their `description` and `invocation` the same way.

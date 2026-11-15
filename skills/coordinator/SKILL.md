@@ -45,26 +45,57 @@ Never guess flags, and never ask the user to paste the configuration.
 If Smart Delegate or its configured invocation mechanism is unavailable, use the host environment's
 normal delegation tools. Do not invent tools or model identifiers.
 
-## Plan, approve, then run to completion
+## Owner and followers
 
-For non-trivial work, planning is a team effort, never a single agent. Run it in rounds, all
-through delegates:
+Use one owner as the source of truth for scope, plan, assignments, and acceptance. Workers own
+bounded assignments through implementation, relevant checks, and a completion or blocker report.
+They may collaborate on specific questions, but must send decisions and dependency changes back
+to the owner. They must not independently change the plan, expand scope, or spawn another layer of
+agents unless the owner explicitly assigned that responsibility and allocated capacity for it.
 
-1. **Diverge.** Launch several planning agents together, each with a different lens: for example
-   architecture and data flow, risks and edge cases, testing and verification, and UI/UX when the
-   change has a user-facing surface. Use at least three agents and different models or families
-   when available, so they do not share blind spots. Each returns a concise proposal.
-2. **Challenge.** Pass the proposals to a critic agent (or have the planners read each other's
-   proposals) to find conflicts, gaps, and unstated assumptions. Resolve disagreements with
-   evidence, or run one more focused round.
-3. **Converge.** One strong agent merges the result into a single plan, which the coordinator
-   checks against the request.
+Start with one concise plan. Use a focused discovery delegate when evidence is missing. Add an
+independent planning or challenge pass only when ambiguity or risk warrants its cost; do not launch
+several planners for routine work. Existing user authorization to own the work is sufficient for
+in-scope execution. Ask for plan approval only when the user requested it or a consequential scope
+decision remains unresolved.
 
-Then present the user one short plan: the outcome, the assignments, which stages will run (review,
-QA, UI and UX verification), the acceptance criteria, and any open disagreement between planners.
-Ask for approval once. After approval, run every stage through to the final report without further
-questions. Stop only for a real blocker or an action outside the approved scope. Skip planning
-rounds when the user already supplied an approved plan or the task is small and unambiguous.
+For ongoing project ownership, default to batches of three related tasks, with five as the maximum
+unless the user specifies otherwise. Smaller batches are appropriate for substantial changes.
+Default to at most three active delegates across implementation, planning, review, and QA combined;
+respect lower host limits. Count external CLI workers too. Queue the rest. Parallel writes need
+isolated worktrees or disjoint owned paths; order dependent or overlapping edits.
+
+At a final-approval checkpoint, deliver one verified batch and wait for the user's disposition
+before starting another implementation batch. Never merge, deploy, or publish merely because a
+batch passed its checks; honor the user's reserved final phase.
+
+## Observe a durable plan
+
+Maintain a compact project-local ledger, such as `.smart-delegate/coordination.md`, through a
+state-keeping delegate. Reuse an existing project task tracker when suitable. Record the approved
+scope, batch, task IDs, dependencies, acceptance criteria, assigned profile and invocation,
+worker/session handles, status, attempts, changed artifacts or revision, and verification evidence.
+Keep raw logs in artifacts, not the owner's context. Recover this state before resuming work; do
+not launch duplicate workers after a context reset.
+
+Use states such as queued, active, awaiting review, verifying, ready, and blocked. A worker finishing
+is an event, not proof that the task is ready. On a completion, blocker, or dependency event, update
+the ledger, check the evidence, and dispatch only the next eligible assignment. Prefer completion
+notifications; when a CLI has none, use bounded status checks on its recorded process/session.
+Do not continuously poll or relaunch work just because it is quiet.
+
+Every assignment includes:
+
+- task ID, outcome, relevant plan excerpt, dependencies, owned paths or worktree, and exclusions;
+- selected profile and invocation, acceptance criteria, verification commands when known, and
+  available time or retry limits;
+- instructions to finish in-scope work and checks without seeking approval for routine steps,
+  report a genuine blocker instead of improvising scope, and avoid unassigned delegation;
+- a concise final report: status, changes and revision, checks and results, artifact/log locations,
+  remaining risks, blockers, and any proposed plan change.
+
+The owner handles coordination and user communication, not implementation. If workers cannot be
+invoked, report the delegation blocker rather than silently implementing the task yourself.
 
 ## Run in the background
 
@@ -113,7 +144,17 @@ Smart Delegate, which selects the worker when invocation is absent.
 
 Feed actionable failures back into the coordination loop, apply in-scope corrections, and rerun only
 affected checks. Stop after two unsuccessful correction cycles and report the evidence. When a
-section is absent or has `enabled: false`, skip it without prompting the user.
+section is absent or has `enabled: false`, skip it unless the user explicitly requested that stage.
+An explicit request for per-change review or QA takes precedence over these defaults.
+
+For project ownership with final approval reserved to the user, require independent review of each
+change, relevant behavioral checks, and integration verification for the batch. Reviewers must not
+review their own implementation. After corrections, verify the final revision and rerun affected
+checks; earlier results do not certify a later diff. If CI is requested, record the actual CI run
+and revision and wait for its terminal result. Missing, inaccessible, pending, or failing CI is not
+green: report the batch as blocked or awaiting verification, never ready. The owner assesses the
+evidence through delegates before handing off a batch with changes, findings resolved, check/CI
+results, and material limitations.
 
 ## Recovery and control
 

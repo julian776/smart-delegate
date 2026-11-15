@@ -126,6 +126,38 @@ script's help or relevant source before first use and must not guess missing arg
 
 Review inspects the quality and correctness of the changes. QA exercises observable behavior. Coordinator runs enabled stages automatically, routes them through Smart Delegate, and feeds actionable failures back into the correction loop.
 
+### Owner and follower coordination
+
+Coordinator holds one durable plan and observes worker completion and blocker events. Workers
+receive bounded tasks, finish implementation and checks, and report evidence back. They do not
+expand scope or create more agents without an explicit assignment. The owner delegates execution
+and verifies results through independent workers.
+
+For ongoing project ownership, the defaults are three tasks per batch (maximum five) and at most
+three active delegates, including external CLI workers. At the user's final-approval checkpoint,
+the owner hands over one verified batch and waits before implementing another. Explicit requests
+for reviews, QA, or CI apply even when optional configuration sections are absent or disabled.
+Requested CI must pass on the final revision before the batch is called ready.
+
+The project-local ledger records assignments, dependencies, worker handles, routing, revisions,
+and verification evidence, allowing coordination to resume without duplicating work. Routine work
+uses one concise plan; extra planning agents are reserved for ambiguity or risk.
+
+### Provider selection
+
+Configured external invocations execute through their own provider, even when the host cannot
+spawn that model natively. Native agents have no automatic preference. Capability and configured
+priority determine selection; failed routes and fallbacks are recorded rather than silently
+replaced. Provider diversity does not require redundant calls on every task.
+
+The multi-provider example separates **Reader** (investigation and review) from **Writer**
+(assigned edits and checks) at each tier. It routes small mechanical tasks to OpenCode MiniMax,
+routine work to OpenCode DeepSeek, and complex work to Codex, with native Claude fallback.
+Select the role first, then the lowest capable tier; reader and writer descriptions guide routing
+and do not enforce filesystem permissions. Independent review selects a separate reader worker.
+It requires installed, authenticated CLIs and real model IDs in place of placeholders. Installing
+the plugin alone does not configure access to other providers.
+
 ### The Upgrade Rule
 
 > **When in doubt between two tiers, always use the higher one.**
