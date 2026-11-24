@@ -5,8 +5,8 @@
 # Replace placeholders with accessible model IDs. Suggested starting points:
 # MiniMax M3 for small mechanical tasks; DeepSeek V4.1 Flash for routine work;
 # GPT-6.1 Sol for complex work. Confirm IDs and access with each provider.
-# OpenCode Console examples: opencode/minimax-m3 and opencode/deepseek-v4.1-flash.
-# Go and direct-provider routes differ; never silently change billing providers.
+# OpenCode Go examples: opencode-go/minimax-m3 and opencode-go/deepseek-v4.1-flash.
+# Console and direct-provider routes differ; never silently change billing providers.
 # Prerequisites: authenticated opencode and codex CLIs; native Claude workers for fallback.
 #
 # Choose Reader or Writer FIRST, then the lowest capable tier. Priority breaks ties

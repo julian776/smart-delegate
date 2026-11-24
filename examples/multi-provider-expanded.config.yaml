@@ -3,7 +3,7 @@
 # Not loaded automatically and not validated with live cross-provider calls.
 # Copy to ~/.config/smart-delegate/config.yaml after checking model access.
 # A project .smart-delegate/config.yaml overrides this entire personal configuration.
-# OpenCode Console (pay as you go) is assumed; Go/direct providers have different IDs/billing.
+# OpenCode Go (subscription) is assumed; Console/direct providers have different IDs/billing.
 # Prerequisites on every computer: authenticated opencode, claude, and codex CLIs.
 # Confirm current models and CLI flags; dated IDs may need updating for your accounts.
 # Roles and tiers use existing description fields, not new parser fields or sandbox guarantees.
@@ -21,10 +21,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/minimax-m3; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/minimax-m3; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent plan --model opencode/minimax-m3
+      opencode run --agent plan --model opencode-go/minimax-m3
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
@@ -39,10 +39,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/deepseek-v4.1-flash; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/deepseek-v4.1-flash; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent plan --model opencode/deepseek-v4.1-flash
+      opencode run --agent plan --model opencode-go/deepseek-v4.1-flash
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
@@ -57,10 +57,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/deepseek-v4-pro; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/deepseek-v4-pro; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent plan --model opencode/deepseek-v4-pro
+      opencode run --agent plan --model opencode-go/deepseek-v4-pro
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Inspect and report only; do not edit project files or run mutating commands. Plan mode is not an OS sandbox.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
@@ -106,10 +106,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/minimax-m3; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/minimax-m3; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent build --model opencode/minimax-m3
+      opencode run --agent build --model opencode-go/minimax-m3
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Write only assigned paths; finish relevant checks.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
@@ -124,10 +124,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/deepseek-v4.1-flash; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/deepseek-v4.1-flash; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent build --model opencode/deepseek-v4.1-flash
+      opencode run --agent build --model opencode-go/deepseek-v4.1-flash
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Write only assigned paths; finish relevant checks.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
@@ -142,10 +142,10 @@ models:
   invocation: |-
     Run from the assigned project root or isolated worktree. Inspect `opencode run --help`
     and `opencode models` once per run; confirm the exact provider/model ID is available.
-    The proposed Console route is opencode/deepseek-v4-pro; do not silently substitute Go or another
-    billing provider. If using Go, explicitly select and record the ID shown by that installation.
+    The proposed Go route is opencode-go/deepseek-v4-pro; do not silently substitute Console or another
+    billing provider. If using Console, explicitly select and record the ID shown by that installation.
     Pass the full assignment via stdin to:
-      opencode run --agent build --model opencode/deepseek-v4-pro
+      opencode run --agent build --model opencode-go/deepseek-v4-pro
     Run in the background with a 15-minute timeout; retain stdout, stderr, and session ID.
     Write only assigned paths; finish relevant checks.
     Do not spawn followers, merge, push, deploy, or change permissions. Preserve existing permission
