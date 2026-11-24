@@ -62,13 +62,6 @@ start and monitor that invocation, but must not do the assignment itself or star
 Do not require an external model ID to appear in the host's native model list. Resolve availability
 through the configured provider mechanism. Use only supported tools and permitted model overrides.
 
-When the environment provides an MCP server with symbolic code access, such as Serena, delegates
-may use it to answer questions about code structure: which symbols a module defines, what a
-symbol's body is, and what references it. It answers from the parser, so it is exact where text
-search drifts, and it spans many files without reading them. Its first call returns a large
-instructions manual, so prefer it when the question spans many files or asks about callers and
-definitions, and skip it when the file is already known and small enough to read directly.
-
 Record selected profile, actual provider/model when known, invocation, and worker handle in the
 coordination ledger or result. Reuse availability findings within a run. If an invocation fails,
 preserve the diagnostic and record the reason before selecting the next suitable profile. Never

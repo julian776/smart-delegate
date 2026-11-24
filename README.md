@@ -236,66 +236,6 @@ Both require installed, authenticated CLIs and accessible model IDs. Replace the
 example's placeholders or verify the expanded example's concrete IDs. Installing the plugin alone
 does not configure access to other providers.
 
-### Semantic code access with Serena
-
-[Serena](https://github.com/oraios/serena) is an MCP server that gives delegates symbolic access to
-code: symbol overviews, symbol bodies, and reference search, driven by each language's own
-language server. It is optional, and it is most useful to a coordinator working in a large
-repository.
-
-Install and register it as an MCP server for your host:
-
-```
-uv tool install serena-agent        # or: pipx install serena-agent
-serena init                         # writes ~/.serena/serena_config.yml
-serena setup claude-code            # registers the MCP server for Claude Code
-```
-
-For OpenCode, register the server directly:
-
-```
-opencode mcp add serena --global -- serena start-mcp-server --context=claude-code --project-from-cwd
-```
-
-`serena init` prints the setup commands it detects for the clients on the machine, and is safe to
-run again. The `--project-from-cwd` flag makes Serena activate whichever project the delegate is
-working in, so one registration covers every repository.
-
-Serena's tools reach the host as `serena.initial_instructions` and `serena.serena_repl`. The REPL
-is notebook-style Python: the value of the last expression is the result, so `return` raises
-`SyntaxError`. Inside the REPL, the facade is available as `s` — `s.lsp`, `s.fs`, `s.edit`, `s.mem`,
-`s.shell`. Session ids and the full tool list come from `initial_instructions`. Serena reports line
-numbers 0-based; add one for 1-based.
-
-#### Measured cost and accuracy
-
-Benchmarked on DeepSeek V4.1 Flash, same task and same repo, against a plain read-and-grep path.
-Input is fresh (non-cached) tokens; output is generated tokens.
-
-| Task | Path | Input | Output | Correct |
-|---|---|---|---|---|
-| Symbols in one 163-line file | Serena | 5,368 | 621 | yes |
-| Symbols in one 163-line file | plain read | 1,976 | 199 | yes |
-| Locate risk scoring in a large repo | Serena | 20,140 | 1,879 | yes |
-| Locate risk scoring in a large repo | plain | 16,153 | 1,378 | yes |
-| Enumerate 267 definitions across 40 files | Serena | 18,169 | 4,584 | **exact (267)** |
-| Enumerate 267 definitions across 40 files | plain | 17,568 | 2,774 | **wrong (265)** |
-
-Two things follow.
-
-**Serena is not free, and on a small file it loses.** Its first call returns an instructions manual
-of roughly 2,600 tokens. That fixed cost is not recovered when the answer lives in one file the
-delegate could simply read. If you already know the file, read it.
-
-**Serena wins on breadth, and on correctness.** Enumerating 267 definitions across 40 files is
-where the plain path drifted: it reported 265, missing two. Serena's language server gave the exact
-count. For a coordinator answering "what exists here" or "what calls this", the symbolic answer
-is both cheaper than reading the tree and more accurate than grep, because it comes from the
-parser rather than from text matching.
-
-Reach for Serena when the question spans many files or asks about a symbol's callers and
-definitions. Skip it when the target file is already known.
-
 ### The Upgrade Rule
 
 > **When in doubt between two tiers, always use the higher one.**
