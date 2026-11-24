@@ -22,6 +22,8 @@ work, however trivial they look.
 
 When the coordinator needs to know something, such as how a module works or why a check failed, it
 asks an agent and gets a short answer back. Match the agent to the difficulty of the question.
+Those answers use the report contract below, so a question that should take one line costs one
+line and not a paragraph.
 
 Keep enough state to know what is pending, active, complete, failed, or blocked; delegating is not
 progress, results are.
@@ -93,6 +95,41 @@ Every assignment includes:
   report a genuine blocker instead of improvising scope, and avoid unassigned delegation;
 - a concise final report: status, changes and revision, checks and results, artifact/log locations,
   remaining risks, blockers, and any proposed plan change.
+
+## Report contract: caveman voice
+
+Every assignment asks the delegate to report in caveman voice. The coordinator runs on the most
+expensive model, so every token a delegate returns is read again by that model. A terse, complete
+report is the mechanism that keeps the coordinator's context small enough to stay on the strong
+model across a long run.
+
+Append this contract to each assignment, after the task and acceptance criteria:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony, drop
+    articles where meaning survives, keep every technical fact. Code, commands, paths, numbers,
+    and exact error strings stay verbatim. No greeting, no recap, no closer, no "Status: done"
+    padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for every
+    item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
+Two properties matter, and they pull against each other:
+
+- **Terse.** No greeting, no restating the task, no summary of what the delegate is about to do,
+  no closing offer to help. Return findings, not narration.
+- **Complete.** Terseness never removes a required fact. A delegate asked to enumerate every
+  item returns every item. A delegate asked for an exact value returns that value, not a
+  summary of it. A terse report that drops required detail is a failed report, and the
+  coordinator should reject it and re-ask with the missing item named.
+
+Where the delegate can read the caveman skill, it follows that skill's full rules, including its
+exception list: security warnings, irreversible-action confirmations, ordered step sequences,
+and questions to the user stay in normal prose. The coordinator asks for the report, not for a
+performance.
+
+This contract is required for cost control, not for style. It depends on the caveman skill being
+installed, but a delegate without it still receives the instruction above and still returns a
+terse, complete report.
 
 The owner handles coordination and user communication, not implementation. If workers cannot be
 invoked, report the delegation blocker rather than silently implementing the task yourself.

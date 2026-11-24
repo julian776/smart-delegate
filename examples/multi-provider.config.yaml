@@ -30,6 +30,18 @@ models:
     Run in the background with a time limit. Retain stdout, stderr, and session handle.
     Do not use --auto or bypass permissions. Report permission blockers and failures;
     record the reason before selecting the next suitable profile. Do not spawn workers.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Fast Writer (OpenCode MiniMax)
   priority: 10
   description: 'Writer: small mechanical edits from a decided plan, with easy verification. May edit only
@@ -44,6 +56,18 @@ models:
     Run in the background with a time limit. Retain stdout, stderr, and session handle.
     Do not use --auto or bypass permissions. Report permission blockers and failures;
     record the reason before selecting the next suitable profile. Do not spawn workers.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Focused Reader (OpenCode DeepSeek)
   priority: 20
   description: 'Reader: routine investigation, behavior tracing, diagnosis, and review. Inspect and report
@@ -58,6 +82,18 @@ models:
     Run in the background with a time limit. Retain stdout, stderr, and session handle.
     Do not use --auto or bypass permissions. Report permission blockers and failures;
     record the reason before selecting the next suitable profile. Do not spawn workers.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Focused Writer (OpenCode DeepSeek)
   priority: 20
   description: 'Writer: routine bounded implementation, documentation, tests, and contained fixes. May
@@ -72,6 +108,18 @@ models:
     Run in the background with a time limit. Retain stdout, stderr, and session handle.
     Do not use --auto or bypass permissions. Report permission blockers and failures;
     record the reason before selecting the next suitable profile. Do not spawn workers.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Reader (Codex)
   priority: 30
   description: 'Reader: difficult, ambiguous, or cross-cutting analysis, planning, and independent review.
@@ -84,6 +132,18 @@ models:
     Inspect and report only.
     Do not bypass sandbox/approvals or spawn workers. Record diagnostics and the reason
     before falling back to the next suitable profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Writer (Codex)
   priority: 30
   description: 'Writer: difficult, ambiguous, or cross-cutting implementation and debugging. May edit
@@ -96,18 +156,32 @@ models:
     Edit only assigned paths and finish relevant checks.
     Do not bypass sandbox/approvals or spawn workers. Record diagnostics and the reason
     before falling back to the next suitable profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep fallback Reader (Claude)
   priority: 35
   description: 'Reader: difficult, ambiguous, or cross-cutting analysis, planning, and independent review.
     Inspect and report only; no project edits or mutating commands. Use a native Claude worker when available;
-    this is a fallback, not a host preference.'
+    this is a fallback, not a host preference. Append the report contract to the assignment so the
+    delegate returns a small, complete report; see the Report contract section in the smart-delegate SKILL.md.'
   model:
   - Sonnet
 - title: Deep fallback Writer (Claude)
   priority: 35
   description: 'Writer: difficult, ambiguous, or cross-cutting implementation and debugging. May edit
     only assigned paths and run relevant checks. Use a native Claude worker when available; this is a
-    fallback, not a host preference.'
+    fallback, not a host preference. Append the report contract to the assignment so the delegate
+    returns a small, complete report; see the Report contract section in the smart-delegate SKILL.md.'
   model:
   - Sonnet
 review:

@@ -78,6 +78,39 @@ When you delegate, pass the selected profile's `invocation` text verbatim in the
 with its `description` when it helps the delegate. Do this on every delegation, not only the first.
 For enabled `review` and `qa` stages, pass their `description` and `invocation` the same way.
 
+## Report contract: caveman voice
+
+Every delegated assignment asks the delegate to report in caveman voice. The coordinator reads
+every returned token again on the most expensive model, so a terse, complete report is what keeps
+that context affordable across a long run.
+
+Append this contract to the assignment, after the task and acceptance criteria:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony, drop
+    articles where meaning survives, keep every technical fact. Code, commands, paths, numbers,
+    and exact error strings stay verbatim. No greeting, no recap, no closer, no "Status: done"
+    padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for every
+    item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
+Two properties matter, and they pull against each other:
+
+- **Terse.** No greeting, no restating the task, no narration of what the delegate is about to do,
+  no closing offer to help. Return findings, not process.
+- **Complete.** Terseness never removes a required fact. A delegate asked to enumerate every
+  item returns every item. A delegate asked for an exact value returns that value, not a summary
+  of it. A terse report that drops required detail is a failed report: reject it and re-ask with
+  the missing item named, rather than accepting the gap.
+
+Where the delegate can read the caveman skill, it follows that skill's full rules, including its
+exception list: security warnings, irreversible-action confirmations, ordered step sequences, and
+questions to the user stay in normal prose. Ask for the report, not for a performance.
+
+This contract is required for cost control, not for style. It depends on the caveman skill being
+installed, but a delegate without it still receives the instruction above and still returns a
+terse, complete report.
+
 A configuration may contain an ordered `models` list and optional `review` and `qa` stages:
 
 ```yaml

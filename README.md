@@ -242,6 +242,44 @@ does not configure access to other providers.
 
 This is the core principle. The cost difference between capability profiles is small compared to the cost of re-doing work because a cheaper model gave a wrong or shallow answer.
 
+### The Report Contract
+
+Delegates report in **caveman voice**: answer first, cut ceremony, drop articles where meaning
+survives, keep every technical fact. Code, commands, paths, numbers, and exact error strings stay
+verbatim. No greeting, no recap, no closing offer to help.
+
+This is a cost control, not a style choice. The coordinator runs on the most expensive model, and
+every token a delegate returns is read again by that model. A terse report is what keeps the
+coordinator's context small enough to stay on the strong model across a long run. Measured on an
+identical task with the same model, the contract cut returned output tokens by roughly a quarter;
+the savings grow as the delegate has more to narrate.
+
+Two properties pull against each other, and both are required:
+
+- **Terse.** Return findings, not narration.
+- **Complete.** Terseness never removes a required fact. A delegate asked to enumerate every
+  item returns every item; one asked for an exact value returns that value, not a summary of it.
+  A terse report that drops required detail is a failed report — reject it and re-ask with the
+  missing item named.
+
+Where the delegate can read the [caveman skill](https://skills.sh/juliusbrussee/caveman/caveman),
+it follows that skill's full rules, including its exception list: security warnings,
+irreversible-action confirmations, ordered step sequences, and questions to the user stay in
+normal prose.
+
+**The caveman skill is required for the full behavior.** It supplies the rules, the persistence
+model, and the exception list. Without it installed, delegates still receive the report-format
+instruction above — they still return a terse, complete report — but they lose the skill's
+judgment about when terseness should yield to clarity. Install it with:
+
+```
+npx skills add JuliusBrussee/caveman@caveman -g
+```
+
+The contract ships in every bundled and example configuration, and both skills append it to each
+assignment. Configurations that define their own `invocation` should keep the contract block in
+those invocations; profiles without an `invocation` get it from the skills themselves.
+
 ### Subagent Spawning
 
 The reasoning tier plans and judges; delegates execute. Delegation is the default, not the

@@ -31,6 +31,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Focused Reader — DeepSeek
   priority: 20
   description: Default for routine code investigation, tracing behavior, diagnosis, and routine review.
@@ -49,6 +61,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Reader — DeepSeek Pro
   priority: 30
   description: Use for difficult investigation or review with clear scope but substantial reasoning, or
@@ -67,6 +91,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Reader — Claude Sonnet
   priority: 40
   description: Use for difficult analysis or independent review requiring a different family from DeepSeek,
@@ -83,6 +119,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Advanced Reader — Codex Sol
   priority: 50
   description: Use for complex cross-cutting reasoning, adjudication, or independent review, especially
@@ -98,6 +146,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Fast Writer — MiniMax
   priority: 10
   description: Use only for small, mechanical, low-risk edits with a decided shape. Single clear outcome
@@ -116,6 +176,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Focused Writer — DeepSeek
   priority: 20
   description: Default for routine implementation from an agreed plan, documentation, and contained fixes.
@@ -134,6 +206,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Writer — DeepSeek Pro
   priority: 30
   description: Use for difficult implementation with clear scope but substantial reasoning, or a capability
@@ -152,6 +236,18 @@ models:
     controls; if unattended permissions block execution, report the blocker. Return status,
     revision/artifacts, checks and evidence, and unresolved issues. On failure record diagnostics
     and fallback reason before selecting the next suitable configured profile.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Deep Writer — Claude Sonnet
   priority: 40
   description: Use for difficult implementation requiring a different family from DeepSeek, or when DeepSeek
@@ -168,6 +264,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Advanced Writer — Codex Sol
   priority: 50
   description: Use for complex cross-cutting implementation and debugging, especially after cheaper capable
@@ -183,6 +291,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Expert Reader — Claude Opus
   priority: 60
   description: Use for unresolved architecture, security, or subtle review questions after Deep/Advanced
@@ -198,6 +318,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Expert Writer — Claude Opus
   priority: 60
   description: Use for exceptionally difficult in-scope implementation after Advanced capability failures.
@@ -213,6 +345,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Strongest Reader — Codex Astra
   priority: 70
   description: Reserve for consequential unresolved decisions or adjudication after lower tiers fail.
@@ -228,6 +372,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 - title: Strongest Writer — Codex Astra
   priority: 70
   description: Reserve for hardest in-scope implementation after lower tiers fail with evidence. May edit
@@ -243,6 +399,18 @@ models:
     arbitrary shell commands. If permissions block unattended execution, report the blocker.
     Return status, revision/artifacts, check results/evidence, and unresolved issues. Record the
     reason before falling back to another configured profile; never silently change models.
+
+    Append the following report contract to the assignment so the delegate returns a
+    small, complete report:
+
+    REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+    drop articles where meaning survives, keep every technical fact. Code, commands,
+    paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+    no closer, no "Status: done" padding.
+    Completeness floor: terseness never removes a required fact. If the task asked for
+    every item, a complete enumeration, or an exact value, give every one of them.
+    Report only what the assignment asked for: findings, evidence, and any blocker.
+
 review:
   enabled: true
   description: |-

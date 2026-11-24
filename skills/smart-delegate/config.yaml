@@ -37,6 +37,17 @@ models:
       and fall back to the next suitable profile. Do not substitute a paid model or start a
       nested worker.
 
+      Append the following report contract to `$assignment` so the delegate returns a
+      small, complete report:
+
+        REPORT FORMAT (mandatory): Answer in caveman voice — answer first, cut ceremony,
+        drop articles where meaning survives, keep every technical fact. Code, commands,
+        paths, numbers, and exact error strings stay verbatim. No greeting, no recap,
+        no closer, no "Status: done" padding.
+        Completeness floor: terseness never removes a required fact. If the task asked for
+        every item, a complete enumeration, or an exact value, give every one of them.
+        Report only what the assignment asked for: findings, evidence, and any blocker.
+
   - title: Fast
     model: [Haiku, Luna]
     priority: 15
@@ -48,6 +59,8 @@ models:
       mechanical work, however small the task is. Ideal for exploration that returns a short list
       of findings. Do not use when the answer needs interpretation, when a wrong result would be
       hard to notice, or when instructions are vague.
+      Append the report contract to the assignment so the delegate returns a small, complete
+      report; see the Report contract section in SKILL.md.
 
   - title: Focused
     model: [Sonnet, Terra]
@@ -58,6 +71,8 @@ models:
       review, and synthesizing several files into a conclusion. The assignment should state the
       goal, the boundaries, and how success is checked. Do not use when requirements are unclear or
       the work needs design decisions.
+      Append the report contract to the assignment so the delegate returns a small, complete
+      report; see the Report contract section in SKILL.md.
 
   - title: Deep
     model: [Opus, Sol]
@@ -68,6 +83,8 @@ models:
       reproduce failures, weighing tradeoffs, security analysis, and reviewing work other agents
       produced. Choose this when requirements must be inferred or when a shallow answer would cost
       more in rework than the stronger model costs.
+      Append the report contract to the assignment so the delegate returns a small, complete
+      report; see the Report contract section in SKILL.md.
 
   - title: Strongest
     model: [Fable]
@@ -78,6 +95,8 @@ models:
       security-sensitive or irreversible changes, intricate multi-system debugging, and final
       verification of large efforts. Not for routine work; reserve it for questions where
       correctness matters more than cost or speed.
+      Append the report contract to the assignment so the delegate returns a small, complete
+      report; see the Report contract section in SKILL.md.
 
 # Optional post-change stages. Uncomment either section to enable it. Both
 # skills read these sections from this same file; no per-skill config is needed.
