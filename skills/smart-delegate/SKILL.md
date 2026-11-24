@@ -44,8 +44,8 @@ the configuration.
 
 The script uses the first file found and does not merge: `.smart-delegate/config.yaml` in the
 current project, then `~/.config/smart-delegate/config.yaml`, then the bundled
-[config.yaml](config.yaml) defaults (four tiers: Fast, Focused, Deep, Strongest, each listing
-preferred model names). With no injected text and no configuration file, route using the models
+[config.yaml](config.yaml) defaults. The bundled Fast tier tries the free OpenCode profile
+before its host-native fallback. With no injected text and no configuration file, route using the models
 and delegation tools available in the environment.
 
 ## Provider routing is execution routing

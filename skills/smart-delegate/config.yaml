@@ -6,10 +6,40 @@
 # environment is used; if none is available, the host's default model is used instead.
 # Lower `priority` is preferred between equally suitable tiers, but quality wins: when a task sits
 # between two tiers, choose the stronger one.
+#
+# The Fast tier prefers the optional OpenCode CLI route when it is installed and the free model is
+# available. The native Fast profile is the portable fallback. Creating a configuration file
+# replaces both profiles instead of adding to them.
 models:
+  - title: Fast OpenCode
+    priority: 10
+    description: >
+      Use for simple, low-risk work with a single verifiable answer and little judgment: locating
+      files, finding where a symbol is defined, exact searches, listing usages, installing or
+      downloading dependencies, running a build, test, or other command, extracting or reformatting
+      data, summarizing a small input, and repetitive boilerplate. This is the default tier for
+      mechanical work, however small the task is. Ideal for exploration that returns a short list
+      of findings. Do not use when the answer needs interpretation, when a wrong result would be
+      hard to notice, or when instructions are vague.
+    invocation: |
+      Set `assignment` to the complete assignment text. Run the CLI directly, without a wrapper
+      agent or nested delegation, under a timeout:
+
+          opencode run --agent plan --model opencode/deepseek-v4.1-flash-free --format json --archived "$assignment"
+
+      Use `--agent build` instead of `plan` only when the assignment authorizes project writes or
+      checks that write artifacts. Stay within the authorized paths. Do not pass `--auto`.
+      Capture stdout and stderr. Check the exit status, JSON error events, and the final
+      `step_finish` event before accepting the result.
+      Capture its session ID, along with the provider/model and command, in the delegation record.
+      If the `opencode` CLI is absent, skip this profile and record that.
+      If the invocation fails or times out, record the diagnostic
+      and fall back to the next suitable profile. Do not substitute a paid model or start a
+      nested worker.
+
   - title: Fast
     model: [Haiku, Luna]
-    priority: 10
+    priority: 15
     description: >
       Use for simple, low-risk work with a single verifiable answer and little judgment: locating
       files, finding where a symbol is defined, exact searches, listing usages, installing or

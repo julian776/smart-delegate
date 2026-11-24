@@ -27,12 +27,14 @@ Every task gets matched to a capability tier. With no configuration of your own,
 
 | Tier | Models (first available) | When to use |
 |------|--------------------------|-------------|
-| **Fast** | Haiku, Luna | Simple, low-risk tasks with one verifiable answer — exploration, searches, extraction, boilerplate |
+| **Fast** | OpenCode DeepSeek Flash Free, then Haiku or Luna through the host | Simple, low-risk tasks with one verifiable answer — exploration, searches, extraction, boilerplate |
 | **Focused** | Sonnet, Terra | Well-scoped tasks with clear instructions — implementation, tests, bug diagnosis, routine review |
 | **Deep** | Opus, Sol | Ambiguous or difficult work — architecture, refactor planning, security analysis, tradeoffs |
 | **Strongest** | Fable | Highest-stakes or hardest problems — costly-to-reverse decisions, final verification |
 
 Quality comes first: when a task sits between two tiers, the stronger one wins. Smart Delegate selects the model *and* launches the worker: a profile with an `invocation` is run through that command (for example `codex exec` or `opencode run`), and a profile without one falls back to the host environment's own delegation tools. Any config file you create (project or user-wide) replaces these defaults entirely.
+
+OpenCode is optional. When the CLI or free model is unavailable, Smart Delegate records the reason and uses the next suitable profile. The configuration check may warn about a missing OpenCode executable even when the native fallback is available. Model names such as Haiku and Luna select workers through the host. External routes specify an explicit invocation.
 
 ### Configuration
 
