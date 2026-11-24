@@ -28,6 +28,20 @@ line and not a paragraph.
 Keep enough state to know what is pending, active, complete, failed, or blocked; delegating is not
 progress, results are.
 
+## Use semantic code access when available
+
+If the environment provides an MCP server with symbolic code access, such as Serena, use it for
+questions about code structure: which symbols a module defines, what a symbol's body is, and what
+references it. A language server answers from the parser, so it is exact where text search drifts,
+and it reaches across many files without reading them.
+
+Reach for it when the question spans many files or asks about callers and definitions. Do not use
+it when the file is already known and small enough to read directly — the server's first call
+returns a large instructions manual, and reading one known file is cheaper than that.
+
+This is optional. When no such server is available, delegates use ordinary file and search tools,
+and the coordinator asks the same questions the same way.
+
 ## Use Smart Delegate
 
 Smart Delegate chooses the model and handles invocation. Read
