@@ -4,15 +4,13 @@
 # Local copy of the installed skills (skills CLI writes here)
 /.agents/
 
-# RTK command-output cache
-/.rtk/
-
-# Local agent instructions for this working copy
-/CLAUDE.md
-
 # Skills CLI project install artifact
 /skills-lock.json
 
 # Python bytecode
 __pycache__/
 *.py[cod]
+
+# NOTE: CLAUDE.md and .rtk/ are deliberately NOT ignored.
+# CLAUDE.md holds repository guidance, and .rtk/filters.toml holds project-local
+# RTK filters, which RTK's own documentation says to commit with the repo.
