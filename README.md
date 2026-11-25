@@ -36,6 +36,66 @@ Quality comes first: when a task sits between two tiers, the stronger one wins. 
 
 OpenCode is optional. When the CLI or free model is unavailable, Smart Delegate records the reason and uses the next suitable profile. The configuration check may warn about a missing OpenCode executable even when the native fallback is available. Model names such as Haiku and Luna select workers through the host. External routes specify an explicit invocation.
 
+### Roles and the completion rule
+
+A configuration may describe **roles** instead of capability tiers. A role is one job with one model,
+one expected report, and explicit boundaries: Explorer, Implementer, Planner, Criteria, Reviewer,
+QA, QA user perspective, Visual. The coordinator spawns a role, never a generic agent, and every
+assignment names the role, the single task, the boundaries, and the report that role returns.
+
+The same role can be spawned several times — several Implementers on disjoint paths, several
+Reviewers on separate diffs — and each one still gets exactly one task.
+
+**A task is complete when its acceptance criteria are met.** Not when a delegate says it is done,
+not when the code compiles, not when the tests pass. Before the work starts, the coordinator spawns
+the Criteria role to turn the request into a numbered list where each criterion is observable and
+names the check that decides it. "The function returns the correct result" is not a criterion;
+"subtract(5, 3) returns 2, verified by the test suite" is. Every later role receives that list,
+and QA returns a verdict per criterion with the evidence that decided it. A criterion with no
+deciding check counts as unmet.
+
+This is what makes the difference, and it is measurable. The same buggy change, judged by the same
+model, was caught only when the criteria named the deciding check literally:
+
+| Criteria | Verdict on buggy code |
+|---|---|
+| "calc.py defines subtract(a, b) returning a - b" | **PASS** — bug missed |
+| "returns a - b — check: the return expression is a - b" | **UNMET** — bug caught |
+
+The free-text form noticed the code branched on `isinstance` and passed it anyway as a footnote.
+The literal check made it a failure. The Criteria role writes the deciding check, and that check
+is what the defect walks into.
+
+#### Verification has two mandatory halves
+
+Both are required, and they fail differently:
+
+1. **Mechanical checks.** Unit tests, integration tests, end-to-end tests, linters, type checks,
+   builds. Each acceptance criterion checked independently.
+2. **User perspective.** The running application, exercised the way a person would use it. Does the
+   flow make sense, does it look right, is it usable, are the states and errors handled, is the
+   copy correct. Visual evidence goes to the Visual role with the image attached.
+
+Mechanical checks alone are not verification. A change can pass every test and still ship a broken
+flow or an error the user hits on the second click. That failure mode is invisible to a test suite
+by construction: the test encodes the assumption, the assumption is what is wrong, and the test
+therefore passes. When the user-perspective half is not possible, report it as an explicit
+limitation rather than letting a green mechanical run stand in for it.
+
+#### Order: implement, review, correct, verify
+
+Review runs before verification, always. Verifying a change that review is about to reject wastes
+the verification and produces exactly the outcome that erodes trust in the pipeline — a green
+result on code nobody checked. The Implementer's own report is a claim; the Reviewer's verdict and
+QA's evidence are the two independent things that make a change ready.
+
+```
+implement -> review -> correct -> verify (both halves) -> re-review if corrected -> ready
+```
+
+A correction changes the revision, so the earlier review no longer certifies it. Reviewing once
+and then correcting leaves an unreviewed revision, and that revision is what reaches the user.
+
 ### Configuration
 
 Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks are kept exactly. Claude Code runs that command while loading the skill; hosts that do not execute commands inside skill files (OpenCode, for example) instruct the agent to run the loader itself, so the same routing table is available in every host.

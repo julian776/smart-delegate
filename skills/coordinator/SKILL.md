@@ -55,6 +55,63 @@ They may collaborate on specific questions, but must send decisions and dependen
 to the owner. They must not independently change the plan, expand scope, or spawn another layer of
 agents unless the owner explicitly assigned that responsibility and allocated capacity for it.
 
+## The completion rule
+
+A task is complete when its acceptance criteria are met. Not when a delegate says it is done, not
+when the code compiles, not when the tests pass.
+
+The coordinator owns this definition, and it delegates the writing of it. Before the work starts,
+spawn the Criteria role to turn the request into a numbered, checkable list. Each criterion is
+observable and names what decides it. "The function returns the correct result" is not a
+criterion; "subtract(5, 3) returns 2, verified by the test suite" is.
+
+From then on, every role receives that list. The Implementer satisfies it, the Reviewer checks
+the change against it, and QA returns a verdict per criterion with the evidence that decided it.
+
+The coordinator then compares the returned verdicts against the list itself, and decides:
+
+- Every criterion met, with evidence, and both verification halves complete — the task is done.
+- Any criterion unmet, any criterion without a deciding check, or either verification half
+  incomplete — the task is not done. Route the specific unmet items back to the Implementer.
+
+A criterion with no deciding check counts as unmet. A delegate's summary of its own work counts
+as a claim, not as evidence. The coordinator does not inspect the work itself to decide whether a
+criterion is met — it reads the verdicts and the evidence the roles returned, and it asks another
+role to re-check anything ambiguous.
+
+This is why the completion rule lives with the coordinator rather than with the workers. The
+coordinator knows where the work is and which role owns which part of it. It does not need to
+know how the work is done, and it must not do the work to find out.
+
+## Spawn a role, not a generic agent
+
+Never hand a delegate a vague instruction like "do this" or "help with the feature". Every spawn
+names a role, and the role decides what the delegate may and may not do.
+
+A role has four parts, and every assignment carries all four:
+
+- **The role.** Which one it is: Criteria, Explorer, Implementer, Planner, Reviewer, QA, QA user
+  perspective, or Visual. The role fixes the delegate's single job and its boundaries.
+- **The one task.** Exactly one outcome, stated concretely. "Review the diff in `src/auth/` and
+  report findings", not "review the auth work".
+- **The boundaries.** What the delegate must not touch: excluded paths, files it may not edit,
+  decisions it may not make, and the fact that it must not spawn other agents.
+- **The expected report.** What the delegate returns, in the form that role always uses.
+
+The same role can be spawned several times over a piece of work — several Implementers on disjoint
+paths, or several Reviewers on separate diffs — and each one still gets exactly one task. Two
+agents working the same files at once is a conflict, not parallelism; give them disjoint owned
+paths, or an isolated worktree each.
+
+Choose the role by the kind of work, not by how much of it there is. A large implementation is
+still one Implementer task if it has one outcome; three unrelated fixes are three Implementer
+tasks even if each is small. A Reviewer that also fixes what it finds has stopped being a Reviewer,
+and its verdict is no longer independent.
+
+Delegate each role through Smart Delegate, which selects the model and the invocation. The
+configured profile's description carries the role's boundaries, so pass it to the delegate along
+with the assignment.
+
 Start with one concise plan. Use a focused discovery delegate when evidence is missing. Add an
 independent planning or challenge pass only when ambiguity or risk warrants its cost; do not launch
 several planners for routine work. Existing user authorization to own the work is sufficient for
@@ -88,11 +145,14 @@ Do not continuously poll or relaunch work just because it is quiet.
 
 Every assignment includes:
 
+- the role name and the single task that role owns;
+- the numbered acceptance criteria the assignment must satisfy, or the criteria it must judge;
 - task ID, outcome, relevant plan excerpt, dependencies, owned paths or worktree, and exclusions;
 - selected profile and invocation, acceptance criteria, verification commands when known, and
   available time or retry limits;
 - instructions to finish in-scope work and checks without seeking approval for routine steps,
   report a genuine blocker instead of improvising scope, and avoid unassigned delegation;
+- the report that role returns, in that role's format;
 - a concise final report: status, changes and revision, checks and results, artifact/log locations,
   remaining risks, blockers, and any proposed plan change.
 
@@ -146,15 +206,18 @@ hung worker cannot stall the run.
 ## Coordinate the work
 
 1. Identify the requested outcome, constraints, authorization boundaries, and completion evidence.
-2. Split the work into the smallest useful assignments with clear inputs, outputs, and dependencies.
-3. Keep dependent work ordered and launch independent assignments together when supported.
-4. Give each delegate the context it needs, the expected deliverable, and a request for a concise
-   report. Avoid passing unrelated conversation history.
-5. Check returned results and artifacts against the assignment rather than accepting a success
+2. Spawn the Criteria role to write the numbered acceptance criteria for the request. Every
+   later step refers to that list, and the task is not complete until every criterion is met.
+3. Split the work into the smallest useful assignments with clear inputs, outputs, and dependencies.
+4. Keep dependent work ordered and launch independent assignments together when supported.
+5. Give each delegate the context it needs, the acceptance criteria that apply to it, the expected
+   deliverable, and a request for a concise report. Avoid passing unrelated conversation history.
+6. Check returned results and artifacts against the assignment rather than accepting a success
    claim at face value. Verify by asking another agent, not by doing the work yourself.
-6. Adapt the remaining work when an assumption changes, a dependency fails, or results conflict.
-7. Integrate the outputs and run configured post-change stages.
-8. Perform proportionate final verification through delegates and report one coherent result.
+7. Adapt the remaining work when an assumption changes, a dependency fails, or results conflict.
+8. Integrate the outputs and run configured post-change stages.
+9. Compare the returned verdicts against the acceptance criteria, perform proportionate final
+   verification through delegates, and report one coherent result.
 
 Keep coordination state lightweight. Share a plan with the user when it materially helps them
 understand progress, but do not expose noisy internal bookkeeping.
@@ -180,6 +243,51 @@ Review and QA are separate: review inspects the quality and correctness of chang
 observable behavior. They may run together only when independent. Delegate each stage through
 Smart Delegate, which selects the worker when invocation is absent.
 
+### Review before verification, always
+
+Run review first, then verification. This order is not a preference.
+
+Verifying a change that review is about to reject wastes the verification, and it produces exactly
+the failure that erodes trust in the whole pipeline: a green verification that later turns out to
+have been run against code nobody had actually checked. The Implementer's own report is a claim,
+not evidence. A delegate that says "done" and passes a test it wrote has verified that its own
+assumption is self-consistent, which is not the same as the change being correct.
+
+So the sequence is:
+
+1. **Implement.** The Implementer makes the change and reports what it did.
+2. **Review.** An independent Reviewer, one that did not implement the change, inspects the diff
+   and returns a verdict of approve or request changes, with findings.
+3. **Correct.** Route the reviewer's findings back to the Implementer. The Reviewer does not edit.
+4. **Verify, in two halves.** Both halves are required, and they fail differently.
+   - *Mechanical checks:* the unit tests, integration tests, end-to-end tests, linters, type
+     checks, and builds that cover the change, with each acceptance criterion checked
+     independently against the request.
+   - *User perspective:* the running application, exercised the way a person would use it. Does
+     the flow make sense, does it look right, is it usable, are the states and errors handled,
+     is the copy correct. Visual evidence goes to the Visual role with the image attached.
+5. **Re-review if corrected.** A correction changes the revision, and the earlier review no longer
+   certifies it. Review the corrected diff again, then rerun only the affected checks.
+
+Mechanical checks alone are not verification. A change can pass every test and still ship a broken
+flow, a confusing label, an error the user hits on the second click, or an interface that does not
+match the specification. That failure mode is the reason the user-perspective half exists, and it
+is invisible to a test suite by construction: the test encodes the assumption, the assumption is
+what is wrong, and the test therefore passes.
+
+When the user-perspective half was not possible — no runnable application, no display, no way to
+exercise the flow — report that as an explicit limitation. Do not let a green mechanical run stand
+in for it, and do not report the change as fully verified when it is only half verified.
+
+Step 5 is what keeps the gate meaningful. Reviewing once and then correcting produces an
+unreviewed revision, and that revision is exactly what gets handed to the user.
+
+A change is ready only when it has passed review with no unresolved findings, and has passed both
+verification halves on that same revision. If either half is missing, the change is not ready, and
+saying so plainly is more useful than a confident "done". When review approves but verification
+fails, that is a real defect in the change and the Implementer fixes it. When review requests
+changes, fix those first and do not verify a revision that was never reviewed.
+
 Feed actionable failures back into the coordination loop, apply in-scope corrections, and rerun only
 affected checks. Stop after two unsuccessful correction cycles and report the evidence. When a
 section is absent or has `enabled: false`, skip it unless the user explicitly requested that stage.
@@ -188,11 +296,12 @@ An explicit request for per-change review or QA takes precedence over these defa
 For project ownership with final approval reserved to the user, require independent review of each
 change, relevant behavioral checks, and integration verification for the batch. Reviewers must not
 review their own implementation. After corrections, verify the final revision and rerun affected
-checks; earlier results do not certify a later diff. If CI is requested, record the actual CI run
-and revision and wait for its terminal result. Missing, inaccessible, pending, or failing CI is not
-green: report the batch as blocked or awaiting verification, never ready. The owner assesses the
-evidence through delegates before handing off a batch with changes, findings resolved, check/CI
-results, and material limitations.
+checks; earlier results do not certify a later diff. Both verification halves are required, and a
+missing user-perspective half is a reported limitation, not a pass. If CI is requested, record the
+actual CI run and revision and wait for its terminal result. Missing, inaccessible, pending, or
+failing CI is not green: report the batch as blocked or awaiting verification, never ready. The
+owner assesses the evidence through delegates before handing off a batch with changes, findings
+resolved, check/CI results, and material limitations.
 
 ## Recovery and control
 

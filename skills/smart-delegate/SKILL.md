@@ -150,13 +150,18 @@ section, and every parameter are optional. Supported parameters are:
 - `models`: list of available routing profiles. When absent or empty, select from models and tools
   available in the environment.
 - `models[].title`: human-readable profile label; it does not need to match a provider model ID.
+  A profile may describe a capability tier (Fast, Deep) or a named role (Explorer, Implementer,
+  Planner, Criteria, Reviewer, QA, Visual). A role fixes one job, one expected report, and the
+  boundaries of what the delegate may do; a tier only expresses capability and relative cost.
 - `models[].model`: optional model name or ID, or a list of them in preference order (for example
   `[Sonnet, Terra]`). Use the first one available in the environment, passing it as the model
   parameter of the host's delegation tool when that tool accepts one, or injecting it into
   `invocation`. When absent or none is available, use the host's default model for the profile; if
   that is also unsuitable, fall back to the next suitable profile.
 - `models[].description`: guidance describing which tasks suit the profile. When absent, infer
-  suitability from the other fields and current environment.
+  suitability from the other fields and current environment. For a role, this is where the single
+  job, the must-not-do boundaries, and the expected report belong, so that the description can be
+  passed to the delegate alongside the assignment.
 - `models[].priority`: numeric preference among equally suitable profiles; lower numbers are
   preferred. Entries without it retain file order after entries with an explicit priority.
 - `models[].invocation`: free-form instructions for invoking the profile through an agent, model,
