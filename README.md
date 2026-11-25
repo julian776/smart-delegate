@@ -96,6 +96,31 @@ implement -> review -> correct -> verify (both halves) -> re-review if corrected
 A correction changes the revision, so the earlier review no longer certifies it. Reviewing once
 and then correcting leaves an unreviewed revision, and that revision is what reaches the user.
 
+### Choosing models by measurement, not by tier name
+
+A model name implies nothing about how good it is at a given job. Measure the job.
+
+On the same reviewer task — a buggy Python function pasted inline, same model family, same
+prompt — DeepSeek V4.1 Flash found every defect that Qwen3.8 Max found, **plus two more**: `Decimal`
+truncation, and scientific notation like `"1e3"` raising `ValueError` through `int()`. It also
+*executed* the function to produce verified repros rather than reasoning about the code. As the
+Criteria role it produced deciding checks plus float-tolerance edge cases (`0.1 - 0.05`, and
+`5.5 - 2.2` needing an epsilon comparison) that were not obvious in advance.
+
+Its rates are $0.30/$1.20 per 1M with a **$0.006 cached-read rate**, roughly 5x cheaper than the
+next best. Cached reads dominate agent cost because the context is re-read on every turn, so the
+cheapest cached rate is often the cheapest route, regardless of the sticker rate.
+
+Two checks worth running before you commit a model to a role:
+
+- **Vision.** Attach an image and ask the model to describe it. Models differ sharply here, and a
+  blind model routed a visual task fails outright rather than degrading. DeepSeek V4 Pro and
+  GLM 5.3 both refused image input; DeepSeek V4.1 Flash, Qwen3.8 Flash, GLM 5.3 Flash, MiniMax
+  M3, Qwen3.8 Max, HY4, and Grok 4.7 all read images.
+- **Whether the model actually runs the code.** A model that executes the function finds a
+  different class of defect than one that reads it, and the executed repro is evidence the
+  coordinator can record.
+
 ### Configuration
 
 Smart Delegate and Coordinator use the same optional general configuration file. Create `.smart-delegate/config.yaml` in a project, or `~/.config/smart-delegate/config.yaml` for user-wide preferences. Each time a skill is invoked, `skills/smart-delegate/scripts/load-config.py` loads the first available file (project, then user, then bundled defaults; no merging) and injects it into the model's context with comments stripped, so comments cost no tokens. Only full-line `#` comments are removed; text inside `|` and `>` blocks are kept exactly. Claude Code runs that command while loading the skill; hosts that do not execute commands inside skill files (OpenCode, for example) instruct the agent to run the loader itself, so the same routing table is available in every host.
@@ -116,12 +141,31 @@ models:
     priority: 20
     description: Use for ambiguous, high-impact work where quality matters most.
 
+  # A role: one job, one model, one expected report, explicit boundaries.
+  - title: Reviewer
+    priority: 40
+    description: >
+      Judges completed work. Reviews a diff for correctness, regressions, and security problems.
+      MUST NOT: edit any file or fix anything. A reviewer never writes.
+      A reviewer must not review a change it implemented.
+      Returns: a verdict of approve or request changes, then each finding with its file
+      reference and why it matters, most severe first. Report "no findings" plainly when the
+      work is sound.
+    invocation: |
+      Run `opencode run --agent plan --model provider/reviewer-model --format json --archived "$assignment"`.
+      The `--agent plan` flag is required for this role: it is the one that cannot edit.
+      Capture stdout, stderr, exit status, and the final `step_finish` event.
+
 review:
   enabled: true
   description: |
     Review completed changes for regressions.
     Include maintainability findings with evidence.
-
+    Run this stage BEFORE verification.
+  invocation: |
+    Route through the Reviewer role's invocation.
+    Pass the completed diff and the acceptance criteria on stdin.
+    Record the revision that was reviewed.
 qa:
   enabled: true
   description: |
