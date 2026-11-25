@@ -1,0 +1,18 @@
+# Local tool state and install artifacts — not part of the project.
+# Regenerated or reinstalled as needed; never committed.
+
+# Local copy of the installed skills (skills CLI writes here)
+/.agents/
+
+# RTK command-output cache
+/.rtk/
+
+# Local agent instructions for this working copy
+/CLAUDE.md
+
+# Skills CLI project install artifact
+/skills-lock.json
+
+# Python bytecode
+__pycache__/
+*.py[cod]
