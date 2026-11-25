@@ -2,9 +2,9 @@
 
 Guidance for agents working in this repository.
 
-`CLAUDE.md` is a symlink to this file. Claude Code reads `CLAUDE.md`, most other agents read
-`AGENTS.md`, and OpenCode prefers `AGENTS.md` in a directory over `CLAUDE.md`, so the symlink keeps
-both hosts on one source of truth without loading the guidance twice.
+This is the only instruction file in the repository. `AGENTS.md` is the cross-host standard —
+OpenCode, Codex, and Cursor read it — so it holds the guidance for every agent working here. There
+is deliberately no `CLAUDE.md`: one file, one source of truth.
 
 ## Project Overview
 

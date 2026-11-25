@@ -11,6 +11,10 @@
 __pycache__/
 *.py[cod]
 
-# NOTE: CLAUDE.md and .rtk/ are deliberately NOT ignored.
-# CLAUDE.md holds repository guidance, and .rtk/filters.toml holds project-local
+# A stray local CLAUDE.md must not become a second source of guidance
+CLAUDE.md
+
+# NOTE: .rtk/ is deliberately NOT ignored. .rtk/filters.toml holds project-local
 # RTK filters, which RTK's own documentation says to commit with the repo.
+#
+# AGENTS.md is the only instruction file and is committed.
