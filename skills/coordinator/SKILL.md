@@ -419,7 +419,8 @@ green, merge-ready PR. Merge only when the user or configuration explicitly auth
 record that authorization with `authorize-merge --by <source>` before recording a merged state; a
 self-declared `delivery` value does not authorize a merge. When `auto_merge` is true, record
 `authorize-merge --by config:auto_merge` first; it does not skip review, verification, or CI.
-Disabling a required check or PR after it was enabled needs a recorded reason. Never deploy to
+Disabling a required check or PR after it was enabled needs a recorded reason, for example
+`issue-state.py ci --status failing --no-required --reason "docs-only change"`. Never deploy to
 production.
 
 ### State and recovery

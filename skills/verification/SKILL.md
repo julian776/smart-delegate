@@ -15,7 +15,7 @@ person can reproduce the result. Agreement is not evidence. Executed behavior is
 
 ## Independence
 
-- Never verify work you implemented, reviewed as its author, or were asked to approve.
+- Never verify work you implemented, or work you approved as its reviewer.
 - Do not edit production code, tests under review, or configuration to obtain a passing result.
   Create temporary artifacts in an isolated workspace when a check needs them, and name them.
 - Do not accept the implementer's report, commit message, or test names as proof. Run the check.

@@ -102,7 +102,9 @@ def read_frontmatter(path):
         if first.strip() != "---":
             return None, "missing frontmatter"
         lines = []
-        for line in handle:
+        for count, line in enumerate(handle, 1):
+            if count > 500:
+                return None, "unterminated frontmatter"
             if line.strip() in ("---", "..."):
                 return "\n".join(lines), ""
             lines.append(line.rstrip("\n"))
@@ -219,13 +221,14 @@ def catalog(project, extra, registered_only=False, wanted_types=None):
     roots = discover_roots(project, extra)
     skills = []
     seen = {}
+    duplicate_warnings = []
     for path in skill_files(roots):
         skill = read_skill(path)
         key = skill["name"].lower()
         if key in seen:
-            kept = seen[key]
-            kept["warnings"].append(
-                f"duplicate skill name; ignoring {skill['location']} (using {kept['location']})")
+            duplicate_warnings.append(
+                f"{skill['name']}: duplicate skill name; ignoring {skill['location']} "
+                f"(using {seen[key]['location']})")
             continue
         seen[key] = skill
         skills.append(skill)
@@ -234,7 +237,7 @@ def catalog(project, extra, registered_only=False, wanted_types=None):
     if wanted_types:
         skills = [skill for skill in skills if set(skill["type"]) & set(wanted_types)]
     skills.sort(key=lambda skill: (skill["name"].lower(), skill["location"]))
-    warnings = []
+    warnings = list(duplicate_warnings)
     for skill in skills:
         for warning in skill["warnings"]:
             warnings.append(f"{skill['name']} ({skill['location']}): {warning}")

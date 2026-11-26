@@ -55,14 +55,40 @@ class IssueStateTest(unittest.TestCase):
     def test_self_verification_blocks_completion(self):
         self.init()
         for number, evidence in ((1, "looked at it"), (2, "ran it"), (3, "ran it")):
+            rejected = self.state("criteria-verdict", "--id", f"C{number}", "--verdict", "pass",
+                                  "--evidence", evidence, "--by", " IMPL-A ", expect=2)
+            self.assertIn("verification must be independent", rejected.stderr)
             self.state("criteria-verdict", "--id", f"C{number}", "--verdict", "pass",
-                       "--evidence", evidence, "--by", "impl-a")
-        self.state("review", "--verdict", "approve", "--reviewer", "impl-a")
+                       "--evidence", evidence, "--by", "verifier-b")
+        rejected = self.state("review", "--verdict", "approve", "--reviewer", " IMPL-A ",
+                              expect=2)
+        self.assertIn("review must be independent", rejected.stderr)
+        self.state("review", "--verdict", "approve", "--reviewer", "reviewer-b")
         self.state("ci", "--status", "green")
         self.state("pr", "--url", "https://example.test/pr/1", "--state", "ready")
+        path = self.state_dir / "PAY-142.json"
+        data = json.loads(path.read_text())
+        data["criteria"][0]["verified_by"] = "Impl-A"
+        data["review"]["reviewer"] = "IMPL-A "
+        path.write_text(json.dumps(data))
         result = self.state("gate", expect=1)
         self.assertIn("was verified by its implementer", result.stdout)
         self.assertIn("reviewer is the implementer", result.stdout)
+
+    def test_blank_verifier_is_refused(self):
+        self.init()
+        result = self.state("criteria-verdict", "--id", "C1", "--verdict", "pass",
+                            "--evidence", "self", "--by", "   ", expect=2)
+        self.assertIn("verifier name", result.stderr)
+
+    def test_implementer_cannot_approve_amendment_by_case(self):
+        self.init()
+        result = self.state(
+            "criteria-amend", "--id", "C1", "--text", "Export action visible anywhere",
+            "--justification", "broader scope", "--approved-by", " IMPL-A ",
+            expect=2,
+        )
+        self.assertIn("needs independent approval", result.stderr)
 
     def test_not_verified_is_not_pass(self):
         self.init()
@@ -148,18 +174,49 @@ class IssueStateTest(unittest.TestCase):
         self.state("pr", "--state", "merged")
         result = self.state("gate", expect=1)
         self.assertIn("PR merged without recorded merge authorization", result.stdout)
+        rejected = self.state("authorize-merge", "--by", " IMPL-A ", expect=2)
+        self.assertIn("cannot come from an implementer", rejected.stderr)
         self.state("authorize-merge", "--by", "user request")
         self.state("gate")
+
+    def test_raising_cost_ceiling_after_spend_needs_reason(self):
+        self.init("--max-model-cost-usd", "5")
+        self.state("budget", "--model-cost-usd", "4")
+        result = self.state("budget", "--max-model-cost-usd", "50", expect=2)
+        self.assertIn("needs --reason", result.stderr)
+        self.state("budget", "--max-model-cost-usd", "50", "--reason", "user raised budget")
+        self.state("gate", expect=1)
 
     def test_malformed_nested_state_is_readable(self):
         self.init()
         path = self.state_dir / "PAY-142.json"
+        base = path.read_text()
+        for mutate, message in (
+            (lambda data: data.update(ci="green"), "ci is not a mapping"),
+            (lambda data: data.update(blocker="x"), "blocker is not a mapping"),
+            (lambda data: data["budget"].update(deadline=5), "budget.deadline is not a string"),
+            (lambda data: data["criteria"][0].update(verified_by={"x": 1}),
+             "verified_by is not a string"),
+            (lambda data: data["criteria"][0].update(
+                amendments=[{"justification": "x", "approved_by": 5}]),
+             "approved_by is malformed"),
+        ):
+            with self.subTest(message=message):
+                data = json.loads(base)
+                mutate(data)
+                path.write_text(json.dumps(data))
+                result = self.state("gate", expect=2)
+                self.assertIn(message, result.stderr)
+                self.assertNotIn("Traceback", result.stderr)
+
+    def test_old_schema_has_readable_message(self):
+        self.init()
+        path = self.state_dir / "PAY-142.json"
         data = json.loads(path.read_text())
-        data["ci"] = "green"
+        data["schema"] = 1
         path.write_text(json.dumps(data))
         result = self.state("gate", expect=2)
-        self.assertIn("ci is not a mapping", result.stderr)
-        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("uses schema 1", result.stderr)
 
     def test_unsafe_issue_id_is_refused(self):
         result = run([ISSUE_STATE, "--issue", "PAY 142", "status"], self.project, self.home)

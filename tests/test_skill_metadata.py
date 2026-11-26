@@ -118,6 +118,24 @@ class SkillMetadataTest(unittest.TestCase):
         self.assertNotIn(b"\n", data.replace(b"\r\n", b""))
         self.assertIn(b'author: project-team\r\n', data)
 
+    def test_no_op_preserves_unquoted_existing_keys(self):
+        text = """---
+name: plain
+description: Plain.
+metadata:
+  smart-delegate: true
+  smart-delegate-type: operation
+  smart-delegate-capabilities: docs
+---
+
+# Plain
+"""
+        target = write(self.project / "skills" / "plain" / "SKILL.md", text)
+        result = self.metadata("register", target, "--type", "operation",
+                               "--capabilities", "docs")
+        self.assertIn("unchanged", result.stdout)
+        self.assertEqual(text, target.read_text())
+
     def test_validate_reports_registration(self):
         self.metadata("register", self.skill, "--type", "operation",
                       "--capabilities", "backtesting")
