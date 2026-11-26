@@ -144,8 +144,8 @@ qa:
     Preserve commands, results, and failure evidence.
 ```
 
-This is the only configuration file used by both Smart Delegate and Coordinator. The file, every
-section, and every parameter are optional. Supported parameters are:
+This is the only configuration file used by Smart Delegate, Coordinator, and Verification. The file,
+every section, and every parameter are optional. Supported parameters are:
 
 - `models`: list of available routing profiles. When absent or empty, select from models and tools
   available in the environment.
@@ -174,6 +174,9 @@ section, and every parameter are optional. Supported parameters are:
 - `qa.enabled`: boolean; `false` disables QA and any other value or omission enables it.
 - `qa.description`: free-form QA scope, acceptance criteria, and selection guidance.
 - `qa.invocation`: free-form instructions for invoking a QA agent, test runner, or other tool.
+- `execution`: optional autonomous issue limits read by Coordinator: `max_delegates`,
+  `max_correction_cycles`, `deadline`, `delivery` (`merge-ready` or `merged`), `auto_merge`, and
+  `max_model_cost_usd`. Absent keys use the skill defaults. Validate with `--check`.
 
 Every `description` and `invocation` accepts a single-line YAML string or a multiline block scalar.
 Use `|` to preserve line breaks exactly. Use `>` to fold wrapped lines into spaces. Preserve the

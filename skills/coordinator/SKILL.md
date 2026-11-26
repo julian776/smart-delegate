@@ -4,7 +4,7 @@ description: >
   Coordinate complex work by decomposing it into bounded assignments, delegating independent
   tasks, observing results, adapting when work fails, and synthesizing a verified outcome. Use
   when a request has multiple workstreams, dependencies, or benefits from agent orchestration.
-allowed-tools: Bash(python3 *load-config.py*)
+allowed-tools: Bash(python3 *load-config.py*), Bash(python3 *issue-state.py*), Bash(python3 *discover-skills.py*), Bash(git status:*), Bash(git rev-parse:*), Bash(git worktree:*), Bash(git diff:*), Bash(git log:*), Bash(gh pr:*), Bash(gh run:*)
 ---
 
 # Coordinator
@@ -12,9 +12,16 @@ allowed-tools: Bash(python3 *load-config.py*)
 The coordinator is accountable for the quality and the final output of the task. Every delegate
 reports to the coordinator, and the coordinator answers for what they return.
 
-The coordinator does not execute. It does not read code, search, edit, run tests, or investigate.
+It has two modes. In **supervised** mode it coordinates a request and pauses at the checkpoints the
+user reserved. In **autonomous issue** mode it owns one engineering issue from assignment to
+verified completion, removing routine checkpoints but not correctness gates. Both modes use the
+same roles, routing, review, and verification rules below.
+
+The coordinator does not implement. It does not read code, search, edit, run tests, or investigate.
 It decomposes the work, asks agents to do it, checks what comes back, and reports one coherent
 result. This keeps its context clean and focused on the outcome, not on the work's raw material.
+It may run deterministic status operations: the issue-state script, skill discovery, git revision
+lookup, and recorded CI status. Reading its own ledger is not investigating the work.
 
 A small task is not a reason to execute it. Installing a dependency, running one command, finding
 where a symbol is defined, and writing a few lines of code from an agreed plan are all delegate
@@ -289,8 +296,9 @@ fails, that is a real defect in the change and the Implementer fixes it. When re
 changes, fix those first and do not verify a revision that was never reviewed.
 
 Feed actionable failures back into the coordination loop, apply in-scope corrections, and rerun only
-affected checks. Stop after two unsuccessful correction cycles and report the evidence. When a
-section is absent or has `enabled: false`, skip it unless the user explicitly requested that stage.
+affected checks. Stop after the configured correction limit (default three) and report the evidence.
+When a section is absent or has `enabled: false`, skip it unless the user explicitly requested that
+stage.
 An explicit request for per-change review or QA takes precedence over these defaults.
 
 For project ownership with final approval reserved to the user, require independent review of each
@@ -302,6 +310,168 @@ actual CI run and revision and wait for its terminal result. Missing, inaccessib
 failing CI is not green: report the batch as blocked or awaiting verification, never ready. The
 owner assesses the evidence through delegates before handing off a batch with changes, findings
 resolved, check/CI results, and material limitations.
+
+## Autonomous issue mode
+
+Use this mode when the user assigns one engineering issue and authorizes owning it through verified
+completion. The user can then leave. Return either a verified, reviewed implementation or an
+actionable blocker.
+
+### Input and output
+
+Input: issue objective, repository, execution permissions, resource budget, optional acceptance
+criteria, optional project constraints. Output: final status, implementation revision, evidence per
+criterion, PR state, resource consumption, and any blocker. A human, CLI, Linear integration, or
+future Project Coordinator passes exactly this interface and needs nothing about the internal loop.
+
+### Own the issue, not the code
+
+The coordinator selects strategy, models, and assignments. It does not implement. Delegate from
+intake to completion, including corrections, CI investigation, and evidence gathering. Deterministic
+commands stay with the coordinator: issue state, skill discovery, git revisions, PR and CI status.
+
+### Discover capabilities first
+
+Run the discovery script from this skill's directory:
+
+    python3 <coordinator-skill-dir>/scripts/discover-skills.py --project "$PWD"
+
+Build a catalog of name, description, type, capabilities, and location. Load full instructions only
+when needed; pass locations to delegates, who load them. Prefer registered skills, use a useful
+unregistered skill when repository context points to it, and never register or rewrite one during
+an issue. When no skill covers an operation, inspect repository tooling and attempt the operation
+with authorized resources. Escalate only when it cannot be performed reliably.
+
+### Acceptance criteria
+
+Delegate the list to the Criteria role before implementing. Each numbered criterion states an
+observable outcome and its deciding check. Record it through the state script:
+
+    python3 <coordinator-skill-dir>/scripts/issue-state.py --issue ID init \
+        --objective "..." --implementer "Implementer profile or session" --criteria criteria.md
+
+A criterion with no deciding check is not a criterion. Criteria may change when investigation proves
+an assumption wrong; change one only with `criteria-amend`, a justification, and independent
+approval. Never weaken one to make a failing implementation pass. The gate rejects edits made
+outside the recorded amendment. Do not ask the human to approve criteria when the objective is
+clear.
+
+`criteria.md` is a numbered Markdown list or JSON. Markdown lines are `1. outcome — check: method`;
+JSON entries carry `text` and `check`. Each criterion must name the check that decides it.
+
+### Pick a profile, run one loop
+
+| Profile | Use for | Typical work |
+|---|---|---|
+| lightweight | docs, mechanical or contained changes | minimal criteria, implement, independent review plus appropriate check, CI |
+| standard | ordinary bugs, features, API or UI changes | criteria, implement, review, behavioral verification, corrections, PR and CI |
+| enhanced | performance, concurrency, security, complex integration | same plus specialist investigation and stronger or extra independent evaluation |
+
+Choose the profile yourself. Do not require the user to classify the issue or approve the profile.
+
+1. Read the objective and authorization boundaries.
+2. Discover project capabilities.
+3. Generate and record acceptance criteria.
+4. Delegate implementation on an isolated branch or worktree.
+5. Review the diff with an independent Reviewer.
+6. Correct blocking findings, then re-review the changed revision.
+7. Verify behavior independently against every criterion.
+8. Correct failures and re-verify only affected criteria on the new revision.
+9. Create or update the PR when authorized.
+10. Monitor required CI and repair routine failures.
+11. Re-verify anything the final correction affected.
+12. Run the completion gate and report.
+
+Review precedes verification: never spend verification on a revision review will reject. PR
+creation may happen earlier when it shortens the loop. Do not re-run unaffected checks after a
+correction.
+
+Independence is separation of responsibility, not a different vendor. The Implementer never
+approves its own work. Record implementer, reviewer, and verifier names in the state so the gate can
+reject self-approval. Use a different model family when risk justifies it; do not require one for a
+documentation fix. Compatible roles may share an agent: the Criteria engineer may verify, and a
+Reviewer may verify a straightforward issue, provided neither implemented it.
+
+### Correction loop
+
+Classify findings as blocking, non-blocking, or question. Route blocking findings to an Implementer
+with the failing check and its evidence. A non-blocking improvement is optional; do not implement
+subjective noise. A question needs an investigation assignment before it becomes either.
+
+After a correction, pin the new revision with `set-revision`. That invalidates evidence tied to the
+old revision. Re-review the changed diff, then rerun affected checks and criteria. Reuse earlier
+evidence only when the revision and the affected behavior are unchanged. After three correction
+cycles without meaningful progress, change strategy: narrower assignment, stronger model, specialist
+investigation, or a blocker report. Do not loop the same failing action.
+
+### PR and CI
+
+Create or update the PR only within authorization. Record URL and state. Monitor required checks
+with deterministic commands such as `gh pr checks`, not a permanently running guardian. Classify a
+failure before acting: implementation defect, test defect, flaky test, infrastructure, merge
+conflict, missing permission, or external dependency. Repair implementation and test defects;
+rerun a flaky test once with the evidence recorded. Never disable, weaken, or bypass a required
+check, and never edit unrelated code to make CI green.
+
+Investigate actionable PR feedback. Correct meaningful defects. Decline subjective preferences
+without argument, and escalate genuinely conflicting requirements. Default delivery is a verified,
+green, merge-ready PR. Merge only when the user or configuration explicitly authorizes it, and
+record that authorization with `authorize-merge --by <source>` before recording a merged state; a
+self-declared `delivery` value does not authorize a merge. When `auto_merge` is true, record
+`authorize-merge --by config:auto_merge` first; it does not skip review, verification, or CI.
+Disabling a required check or PR after it was enabled needs a recorded reason, for example
+`issue-state.py ci --status failing --no-required --reason "docs-only change"`. Never deploy to
+production.
+
+### State and recovery
+
+Keep state in `.smart-delegate/issues/<id>.json`, written only through the state script, with the
+concise report beside it. It records phase, objective, criteria, verdicts, revision, review, CI, PR,
+attempts, budget, and blockers. On interruption, read `status`, reconcile the branch and PR, and
+continue from the recorded phase. Do not open a duplicate PR, repeat completed implementation, or
+relaunch a worker whose result is already recorded.
+
+Run each concurrent issue on its own branch and worktree. Never share a working tree between
+issues, and never discard unrelated user changes. Record each delegated assignment, correction
+cycle, and failed attempt. Record model usage or cost only when the provider reports it; otherwise
+report it as unavailable instead of estimating.
+
+### Budgets and escalation
+
+Read the `execution` section of the active configuration: `max_delegates` (default 3 concurrent
+delegated workers), `max_correction_cycles` (default 3), optional `deadline`, `delivery`,
+`auto_merge`, and `max_model_cost_usd`. Deterministic status commands do not consume the delegate
+budget. Record a launch with `record delegate` for reporting, but enforce the concurrency limit when
+dispatching. When the deadline passes, cost exceeds its ceiling, or cycles exceed the limit, stop
+with a budget blocker instead of continuing. `max_delegates` is a concurrency bound, not a cap on
+total assignments.
+
+Escalate a model after a failed attempt with a concrete diagnostic, not before. Escalate to the
+human only for: missing credentials or resources, consequential ambiguity the repository cannot
+resolve, an unauthorized architectural change, an external dependency, an exhausted budget, or
+repeated attempts without meaningful progress. Ordinary implementation difficulty is the system's
+work, not the human's.
+
+### Terminate on evidence
+
+Report success only when the gate passes:
+
+    python3 <coordinator-skill-dir>/scripts/issue-state.py --issue ID gate
+
+Exit 0 means every criterion is PASS with evidence on the delivered revision, an independent
+Reviewer approved that revision with no blocking findings, required CI is green on that revision,
+the PR is in its authorized state, no blocker remains, and the budget is not exhausted. Any other
+exit means not complete: exit 1 lists open gates, exit 3 is a recorded blocker, exit 4 is an
+exhausted budget.
+
+NOT VERIFIED is not PASS. A missing or pending CI result is not green. Evidence from another
+revision does not certify this one. Never report partially verified work as complete.
+
+### Report
+
+End with a concise report from `issue-state.py report`: status, outcome, criteria verdicts, review,
+CI, corrections, human interventions, PR, evidence, resources, and any blocker with attempted
+solutions and the exact human action required. Keep agent conversation out of it.
 
 ## Recovery and control
 

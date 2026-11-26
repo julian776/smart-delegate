@@ -1,13 +1,17 @@
 # Smart Delegate
 
-A provider-agnostic plugin for **intelligent multi-agent coordination**. Its two skills separate orchestration from model selection: Coordinator owns the outcome, while Smart Delegate routes each assignment to the right capability profile.
+A provider-agnostic plugin for **intelligent multi-agent coordination**. It separates four concerns: project knowledge (project skills), model routing (Smart Delegate), issue orchestration (Coordinator), and independent evaluation (Verification).
+
+Assign one engineering issue and leave. Coordinator owns it from acceptance criteria through implementation, independent review, behavioral verification, corrections, and the PR/CI lifecycle. It returns either a verified, merge-ready result or an actionable blocker. Routine failures do not come back to you.
 
 ## Skills
 
-- **Coordinator** is accountable for the quality and output of the task. It never executes work itself: it decomposes, delegates, checks what every agent reports back, recovers from failures, and synthesizes a verified outcome, keeping its own context clean. When it needs information, it asks an agent sized to the difficulty.
+- **Coordinator** is accountable for the quality and output of the task. It never implements work itself: it decomposes, delegates, checks what every agent reports back, recovers from failures, and synthesizes a verified outcome. In autonomous issue mode it owns one issue through a mechanically gated completion check.
 - **Smart Delegate** selects a suitable configured profile, model, and invocation mechanism for each assignment.
+- **Verification** independently exercises the delivered revision and returns a PASS, FAIL, or NOT VERIFIED verdict per acceptance criterion, with reproducible evidence.
+- **create-operation-skill** and **create-verification-skill** prepare a repository: they discover existing project skills, then register, minimally adapt, or generate one that teaches agents how to run an operation or exercise an application.
 
-Use Coordinator for multi-step or multi-agent work. It automatically applies Smart Delegate when choosing how each assignment should run.
+Use Coordinator for multi-step or multi-agent work. It automatically applies Smart Delegate when choosing how each assignment should run, and Verification when behavioral evidence is required.
 
 ## Philosophy
 
@@ -96,6 +100,120 @@ implement -> review -> correct -> verify (both halves) -> re-review if corrected
 A correction changes the revision, so the earlier review no longer certifies it. Reviewing once
 and then correcting leaves an unreviewed revision, and that revision is what reaches the user.
 
+### Autonomous issue execution
+
+Assign one issue, authorize the repository and delivery state, and leave. Coordinator discovers project capabilities, delegates acceptance criteria, implements, reviews, verifies, corrects, opens or updates the PR, watches required CI, and terminates with evidence.
+
+**Input**: issue objective, repository, execution permissions, resource budget, optional acceptance criteria and project constraints.
+**Output**: final status, implementation revision, evidence per criterion, PR state, resource consumption, blockers.
+
+This is the complete interface a future Project Coordinator, CLI, or Linear integration needs. It does not need to know about internal review, correction, or verification steps.
+
+The loop:
+
+```
+intake -> discover skills -> criteria -> implement -> independent review
+  -> correct -> independent verification -> PR -> required CI -> gate -> report
+```
+
+Review precedes verification, because verifying a revision that review will reject wastes the run. PR creation may start earlier when it shortens the loop. A correction pins a new revision, invalidates evidence tied to the old one, and re-runs only affected checks.
+
+Three execution profiles, selected by the coordinator without asking the user:
+
+| Profile | Use for | Work |
+|---|---|---|
+| Lightweight | docs, mechanical, contained fixes | minimal criteria, implementation, independent review plus an appropriate check, CI |
+| Standard | ordinary bugs, features, API and UI changes | criteria, implementation, review, behavioral verification, corrections, PR and CI |
+| Enhanced | performance, concurrency, security, complex integration | standard plus specialist investigation and stronger or additional independent evaluation |
+
+**Acceptance criteria are recorded before implementation.** Each criterion names an observable outcome and its deciding check. The coordinator may amend one when investigation proves an assumption wrong, but only with a justification and independent approval, and the change is recorded. The completion gate rejects an edit made outside that record, so a criterion cannot be silently weakened to make a failing implementation pass.
+
+**Independent evaluation is mandatory.** The Implementer never approves its own work. Reviewer and Verifier are separate responsibilities; a straightforward issue may combine them in one independent agent and execution context, but never with the Implementer. The gate rejects a reviewer or verifier named as an implementer. Different model families improve independence when risk justifies the cost, but separation from implementation matters more than vendor diversity.
+
+**State, recovery, and budgets.** One issue's state lives in `.smart-delegate/issues/<id>.json`, written through the coordinator's state script:
+
+```bash
+python3 skills/coordinator/scripts/issue-state.py --issue PAY-142 init \
+  --objective "Add transaction export" --implementer "Implementer profile" \
+  --criteria criteria.md --revision abc123
+
+python3 skills/coordinator/scripts/issue-state.py --issue PAY-142 status
+python3 skills/coordinator/scripts/issue-state.py --issue PAY-142 gate
+python3 skills/coordinator/scripts/issue-state.py --issue PAY-142 report --write
+```
+
+`gate` exits 0 only when every criterion is PASS with evidence on the delivered revision, an independent reviewer approved that revision with no blocking findings, required CI is green on that revision, the PR is in its authorized state, no blocker remains, and the budget is not exhausted. Exit 1 lists open gates, exit 3 is a recorded blocker, exit 4 is an exhausted budget. On interruption, read the state, reconcile the branch and PR, and resume from the recorded phase without duplicating implementation, workers, or PRs.
+
+Limits come from the optional `execution` configuration section: `max_delegates` (default 3), `max_correction_cycles` (default 3), `deadline`, `delivery`, `auto_merge`, and `max_model_cost_usd`. After three correction cycles without meaningful progress, the coordinator changes strategy or reports a blocker instead of repeating the same failing action.
+
+**Termination is evidence-based.** A completion report is concise:
+
+```
+PAY-142 — Payments endpoint optimization
+Status: Verified, merge ready.
+Outcome: p95 latency 200 ms -> 46 ms on the defined workload.
+Criteria: latency PASS, payment correctness PASS, idempotency PASS, tenant isolation PASS.
+Review: no unresolved blocking findings.
+CI: all required checks passed at revision 9f2c1ab.
+Corrections: 2. Human interventions: 0.
+PR: https://github.com/example/repo/pull/142
+Resources: 41 min, 6 delegates, cost not reported by provider.
+```
+
+A blocker report states the exact problem, attempted solutions, remaining options, and the human action required:
+
+```
+BT-81 — Historical market data integration
+Status: Blocked (credentials).
+Completed: implementation, unit tests, independent review.
+Blocker: development provider API credentials unavailable.
+Attempted: existing dev config, local mocks, provider sandbox.
+Required action: provide authorized development credentials or approve mock-based verification.
+```
+
+NOT VERIFIED is never reported as PASS, and missing or pending CI is never reported as green.
+
+Host limitation: autonomous execution needs a host that can run delegated work without continuous human turns. Claude Code background agents, OpenCode `run`, Codex `exec`, and similar CLI invocations satisfy this when run in the background. A Markdown skill alone does not create a scheduler; use `nohup`, `tmux`, or `systemd-run` around the configured CLI when the host has no background mechanism, and resume from the state file. Do not build a separate orchestration runtime for the MVP.
+
+### Project skills
+
+Project skills teach agents how to operate a particular repository: run a backtest, start an application, authenticate in development, replay an event, seed data, run a benchmark. They are useful to humans and other agents without Smart Delegate. They must not contain issue orchestration policy.
+
+Setup skills generate, register, or adapt them. Both discover first:
+
+```bash
+python3 skills/coordinator/scripts/discover-skills.py --project "$PWD"
+python3 skills/coordinator/scripts/discover-skills.py --project "$PWD" --registered --json
+```
+
+Discovery reads frontmatter only, so a catalog costs a few hundred tokens instead of every skill body. Coordinator loads full instructions only when an assignment needs them and passes the location to the delegate. Unregistered skills remain usable through normal repository context; they are never registered or rewritten during issue execution.
+
+Registration is three optional metadata keys:
+
+```yaml
+---
+name: run-backtest
+description: Execute local strategy backtests.
+metadata:
+  smart-delegate: "true"
+  smart-delegate-type: operation
+  smart-delegate-capabilities: backtesting,simulation
+---
+```
+
+`smart-delegate-type` accepts `operation`, `verification`, or both. Registration means discoverable; it does not imply Smart Delegate ownership, certification, exclusive use, or permission to run sensitive operations. A malformed or missing field produces a warning and never blocks issue execution.
+
+Registering an existing skill changes only those keys. The body, description, other metadata, references, and formatting stay byte-for-byte unchanged, and registration does not trigger a validation ceremony:
+
+```bash
+python3 skills/coordinator/scripts/skill-metadata.py register \
+  .agents/skills/run-backtest/SKILL.md --type operation --capabilities backtesting
+```
+
+When an existing skill genuinely lacks operational information, the user may authorize a minimal adaptation. The setup skills present the existing capabilities, the real gap, and a recommendation, then ask whether to register, adapt, create a separate skill, or change nothing. No file is modified before that choice. New skills are validated by an agent that did not write them, using the actual commands; unverified instructions are reported rather than claimed.
+
+Generated skills follow the caveman writing standard: imperative, exact commands and paths, explicit parameters and output locations, no filler, no invented commands, and progressive disclosure through `references/`. Complete [operation](examples/project-skills/run-backtest/SKILL.md) and [verification](examples/project-skills/verify-backtest-platform/SKILL.md) examples are in the repository. The shared discovery, authorization, generation, and validation workflow is in [setup-workflow.md](skills/create-operation-skill/references/setup-workflow.md).
+
 ### Choosing models by measurement, not by tier name
 
 A model name implies nothing about how good it is at a given job. Measure the job.
@@ -174,6 +292,12 @@ qa:
   invocation: |
     Run `my-qa-tool --changed`.
     Summarize failures and preserve command output.
+
+execution:
+  max_delegates: 3
+  max_correction_cycles: 3
+  delivery: merge-ready
+  auto_merge: false
 ```
 
 The file, every section, and every parameter are optional:
@@ -194,6 +318,15 @@ The file, every section, and every parameter are optional:
 | `qa.enabled` | Set to `false` to disable QA; omission means enabled. |
 | `qa.description` | Free-form QA scope, acceptance criteria, and worker-selection guidance. |
 | `qa.invocation` | Free-form instructions for invoking the QA agent, test runner, or tool. |
+| `execution` | Optional autonomous issue limits, read by Coordinator. |
+| `execution.max_delegates` | Maximum concurrent delegated workers; default 3. |
+| `execution.max_correction_cycles` | Corrections allowed before strategy change or blocker; default 3. |
+| `execution.deadline` | ISO 8601 deadline for the issue, for example `2026-11-26T18:00:00Z`. |
+| `execution.delivery` | `merge-ready` (default) or `merged`; `merged` requires explicit authorization. |
+| `execution.auto_merge` | Boolean; `true` only where merge authorization is explicit. |
+| `execution.max_model_cost_usd` | Optional spend ceiling when the provider reports cost. |
+
+Merging also needs a recorded authorization in issue state (`authorize-merge --by <source>`). Setting `delivery: merged` alone does not authorize it; the gate rejects a merged PR without that record. `max_delegates` bounds concurrent workers, not the total number of assignments, so record launches for reporting and enforce concurrency when dispatching.
 
 All `description` and `invocation` parameters accept single-line or multiline YAML strings. Use `|`
 when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
@@ -243,13 +376,16 @@ a strongest-model pass.
 Neither example is loaded automatically. From a checkout, copy your chosen example to
 `~/.config/smart-delegate/config.yaml`, preserving any existing configuration first.
 
-For a new computer without a checkout, this Bash recipe installs both skills globally and
+For a new computer without a checkout, this Bash recipe installs all five skills globally and
 downloads the expanded configuration. Change `routing_example` to `multi-provider.config.yaml`
 for the compact version. It backs up any existing config and downloads before replacing it:
 
 ```bash
 npx skills add https://github.com/julian776/smart-delegate -g --skill smart-delegate
 npx skills add https://github.com/julian776/smart-delegate -g --skill coordinator
+npx skills add https://github.com/julian776/smart-delegate -g --skill verification
+npx skills add https://github.com/julian776/smart-delegate -g --skill create-operation-skill
+npx skills add https://github.com/julian776/smart-delegate -g --skill create-verification-skill
 
 (
   set -e
@@ -380,9 +516,9 @@ judgment about when terseness should yield to clarity. Install it with:
 npx skills add JuliusBrussee/caveman@caveman -g
 ```
 
-The contract ships in every bundled and example configuration, and both skills append it to each
-assignment. Configurations that define their own `invocation` should keep the contract block in
-those invocations; profiles without an `invocation` get it from the skills themselves.
+The contract ships in every bundled and example configuration, and every execution skill appends it
+to each assignment. Configurations that define their own `invocation` should keep the contract block
+in those invocations; profiles without an `invocation` get it from the skills themselves.
 
 ### Subagent Spawning
 
@@ -410,8 +546,13 @@ judging the result, and talking to the user.
 npx skills add julian776/smart-delegate -g
 ```
 
-`-g` installs globally, so the `smart-delegate` and `coordinator` skills are available in every
+`-g` installs globally, so the execution skills (`smart-delegate`, `coordinator`, `verification`)
+and the setup skills (`create-operation-skill`, `create-verification-skill`) are available in every
 project and every supported agent. Update later with `npx skills update`.
+
+The setup skills call scripts from the coordinator skill directory. Install them from the same
+repository, or keep the five skill directories together; without its sibling coordinator, a setup
+skill cannot discover or register skills.
 
 ### Alternative: Claude Code plugin
 
@@ -478,6 +619,61 @@ The owner keeps assignments and evidence in a project-local ledger, such as
 route or unavailable CI is reported as a blocker, not silently replaced by inline implementation
 or a claim that checks passed.
 
+For autonomous issue ownership, assign the issue and the delivery boundary:
+
+> Own PAY-142. Add transaction history export to the account page. Work on an isolated branch,
+> deliver a verified, green, merge-ready PR, and do not merge or deploy. Verify tenant isolation
+> and idempotency independently. Report any genuine blocker.
+
+Coordinator returns the concise completion or blocker report. It does not ask for review,
+correction, verification, or CI follow-up in between.
+
+Setup skills are invoked when preparing a repository:
+
+```
+$create-operation-skill how to run the local strategy backtest
+$create-verification-skill how to exercise the dashboard in the dev environment
+```
+
+Both discover existing skills first and present the register, adapt, create, or leave choice. They
+modify nothing without authorization.
+
+## Validation and tests
+
+Run the automated suite from the repository root:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+It covers the completion gate, evidence invalidation after a revision change, independent-reviewer
+enforcement, amendment and tamper detection, blocker and budget termination, persistence and
+recovery, skill discovery with malformed metadata, byte-preserving registration, config validation,
+and the skill contracts.
+
+[SCENARIOS.md](tests/SCENARIOS.md) maps MVP acceptance scenarios A-U to automated coverage or a
+reproducible manual procedure. Real multi-repository pilot results are not reported here: no
+representative external projects were assigned in this environment. The pilot procedure and metrics
+are documented so results can be collected without fabrication. This repository's MVP work was run
+through the same loop; its gate state and report are runtime artifacts outside the committed tree,
+reproducible with the procedure in SCENARIOS.md.
+
+Known limitations:
+
+- **Unattended run depends on the host.** Coordinator is a skill, not a scheduler. Use a host with
+  background agents or run the configured CLI in the background and resume from the state file.
+- **Model cost is often unavailable.** The state records it only when the provider reports it;
+  otherwise the report says `not reported`.
+- **CI applies only when the repository defines checks.** A missing workflow is reported as not
+  applicable, never as green.
+- **Merging is not automatic.** Default delivery is a verified, merge-ready PR. `auto_merge` and
+  `delivery: merged` require explicit authorization.
+- **Skill discovery is convention-based.** It scans the standard project and user skill roots plus
+  `SMART_DELEGATE_SKILL_PATHS`. A host with a different layout must pass `--path`.
+- **Verification quality still depends on the assignment.** A criterion with a vague deciding check
+  produces vague evidence; the gate rejects missing checks but cannot measure how decisive an
+  existing check is.
+
 ## Routing Examples
 
 ### Fast tier
@@ -521,16 +717,29 @@ Smart Delegate **stacks** with compression tools. Use Caveman for output style +
 smart-delegate/
 ├── examples/
 │   ├── multi-provider.config.yaml # Compact reader/writer routing example
-│   └── multi-provider-expanded.config.yaml # Expanded pool with concrete model IDs
+│   ├── multi-provider-expanded.config.yaml # Expanded pool with concrete model IDs
+│   └── project-skills/            # Generated operation and verification examples
 ├── .claude-plugin/
-│   └── plugin.json          # Claude Code plugin manifest
+│   └── plugin.json                # Claude Code plugin manifest
+├── tests/                         # Standard-library unittest suite and scenario map
 └── skills/
     ├── coordinator/
-    │   └── SKILL.md          # Orchestration and observation loop
-    └── smart-delegate/
-        ├── SKILL.md          # Provider-agnostic routing rules
-        ├── scripts/load-config.py  # Loads the active config with comments stripped
-        └── config.yaml       # Bundled default tiers
+    │   ├── SKILL.md               # Supervised and autonomous issue orchestration
+    │   └── scripts/
+    │       ├── issue-state.py     # Persistence, recovery, budgets, completion gate
+    │       ├── discover-skills.py # Frontmatter-only capability catalog
+    │       └── skill-metadata.py  # Byte-preserving registration and validation
+    ├── smart-delegate/
+    │   ├── SKILL.md               # Provider-agnostic routing rules
+    │   ├── scripts/load-config.py # Loads the active config with comments stripped
+    │   └── config.yaml            # Bundled defaults and optional execution limits
+    ├── verification/
+    │   └── SKILL.md               # Independent behavioral verification
+    ├── create-operation-skill/
+    │   ├── SKILL.md               # Operation skill generator
+    │   └── references/setup-workflow.md  # Shared setup workflow
+    └── create-verification-skill/
+        └── SKILL.md               # Verification skill generator
 ```
 
 ## Contributing

@@ -118,6 +118,16 @@ models:
 #   invocation: |
 #     Run the configured QA tool against the changed behavior.
 #     Preserve commands, results, and failure evidence.
+#
+# Optional autonomous issue limits. The coordinator reads this section; defaults
+# apply when it is absent or a key is omitted. `deadline` is ISO 8601.
+# execution:
+#   max_delegates: 3
+#   max_correction_cycles: 3
+#   deadline: 2026-11-26T18:00:00Z
+#   delivery: merge-ready        # merge-ready or merged; merged needs explicit authorization
+#   auto_merge: false
+#   max_model_cost_usd: 20
 
 # For complex invocation logic, reference a script instead of embedding many
 # shell commands here. Explain its path, inputs, outputs, and failure behavior:
