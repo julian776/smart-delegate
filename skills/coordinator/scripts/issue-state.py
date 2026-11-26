@@ -77,11 +77,12 @@ def read(args):
         raise SystemExit(fail(f"unreadable state at {path}: {error}"))
     if not isinstance(state, dict):
         raise SystemExit(fail(f"invalid state at {path}: top level is not a mapping"))
-    if state.get("schema") != SCHEMA:
-        if state.get("schema") == 1:
+    schema = state.get("schema")
+    if not (isinstance(schema, int) and not isinstance(schema, bool)) or schema != SCHEMA:
+        if schema == 1 and not isinstance(schema, bool):
             raise SystemExit(fail(
                 f"state at {path} uses schema 1; re-init the issue or migrate content_sha fields"))
-        raise SystemExit(fail(f"unsupported state schema at {path}: {state.get('schema')!r}"))
+        raise SystemExit(fail(f"unsupported state schema at {path}: {schema!r}"))
     required = ("id", "objective", "phase", "criteria", "review", "ci", "pr", "budget")
     missing = [key for key in required if key not in state]
     if missing:
@@ -141,8 +142,21 @@ def read(args):
     if not isinstance(state.get("implementers", []), list) or not all(
             isinstance(name, str) for name in state.get("implementers", [])):
         raise SystemExit(fail(f"invalid state at {path}: implementers is not a list of names"))
+    if any(not normalize_name(name) for name in state.get("implementers", [])):
+        raise SystemExit(fail(f"invalid state at {path}: implementers contains a blank name"))
+    if state.get("review", {}).get("reviewer") is not None \
+            and not isinstance(state["review"]["reviewer"], str):
+        raise SystemExit(fail(f"invalid state at {path}: review.reviewer is not a string"))
     if state.get("blocker") is not None and not isinstance(state["blocker"], dict):
         raise SystemExit(fail(f"invalid state at {path}: blocker is not a mapping"))
+    if isinstance(state.get("blocker"), dict):
+        for key in ("kind", "problem", "next_action"):
+            if key in state["blocker"] and not isinstance(state["blocker"][key], str):
+                raise SystemExit(fail(f"invalid state at {path}: blocker.{key} is not a string"))
+        for key in ("attempted", "options"):
+            value = state["blocker"].get(key, [])
+            if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+                raise SystemExit(fail(f"invalid state at {path}: blocker.{key} is not a list of strings"))
     for key in ("id", "objective", "phase", "revision"):
         if key in state and not isinstance(state[key], str):
             raise SystemExit(fail(f"invalid state at {path}: {key} is not a string"))
@@ -528,9 +542,10 @@ def cmd_budget(args):
         budget["deadline"] = args.deadline
     if args.max_model_cost_usd is not None:
         previous = budget.get("max_model_cost_usd")
-        if previous is not None and args.max_model_cost_usd > previous \
-                and budget.get("model_cost_usd") is not None and not (args.reason or "").strip():
-            raise SystemExit(fail("raising the cost ceiling after spend needs --reason"))
+        if budget.get("model_cost_usd") is not None \
+                and (previous is None or args.max_model_cost_usd > previous) \
+                and not (args.reason or "").strip():
+            raise SystemExit(fail("setting or raising the cost ceiling after spend needs --reason"))
         budget["max_model_cost_usd"] = args.max_model_cost_usd
         if args.reason:
             budget["max_model_cost_reason"] = args.reason.strip()
@@ -623,6 +638,7 @@ def evaluate(state):
     criteria = state.get("criteria", [])
     revision = state.get("revision", "")
     implementer_keys = {normalize_name(name) for name in state.get("implementers", [])}
+    implementer_keys.discard("")
 
     if not criteria:
         reasons.append("no acceptance criteria recorded")
@@ -660,7 +676,7 @@ def evaluate(state):
         reasons.append("review is not for the delivered revision")
     if review.get("blocking"):
         reasons.append(f"{len(review['blocking'])} blocking review finding(s) remain")
-    if review.get("verdict") == "approve" and review.get("reviewer"):
+    if review.get("verdict") == "approve" and normalize_name(review.get("reviewer", "")):
         if normalize_name(review["reviewer"]) in implementer_keys:
             reasons.append("reviewer is the implementer")
     elif review.get("verdict") == "approve":

@@ -81,6 +81,16 @@ class IssueStateTest(unittest.TestCase):
                             "--evidence", "self", "--by", "   ", expect=2)
         self.assertIn("verifier name", result.stderr)
 
+    def test_blank_reviewer_in_state_cannot_certify(self):
+        self.init()
+        self.complete_evidence()
+        path = self.state_dir / "PAY-142.json"
+        data = json.loads(path.read_text())
+        data["review"]["reviewer"] = "   "
+        path.write_text(json.dumps(data))
+        result = self.state("gate", expect=1)
+        self.assertIn("reviewer identity missing", result.stdout)
+
     def test_implementer_cannot_approve_amendment_by_case(self):
         self.init()
         result = self.state(
@@ -187,6 +197,12 @@ class IssueStateTest(unittest.TestCase):
         self.state("budget", "--max-model-cost-usd", "50", "--reason", "user raised budget")
         self.state("gate", expect=1)
 
+    def test_first_cost_ceiling_after_spend_needs_reason(self):
+        self.init()
+        self.state("budget", "--model-cost-usd", "4")
+        result = self.state("budget", "--max-model-cost-usd", "50", expect=2)
+        self.assertIn("needs --reason", result.stderr)
+
     def test_malformed_nested_state_is_readable(self):
         self.init()
         path = self.state_dir / "PAY-142.json"
@@ -200,6 +216,11 @@ class IssueStateTest(unittest.TestCase):
             (lambda data: data["criteria"][0].update(
                 amendments=[{"justification": "x", "approved_by": 5}]),
              "approved_by is malformed"),
+            (lambda data: data.update(implementers=["   "]), "implementers contains a blank name"),
+            (lambda data: data.update(
+                blocker={"kind": "x", "problem": "p", "next_action": "n", "attempted": 5,
+                         "options": []}),
+             "blocker.attempted is not a list of strings"),
         ):
             with self.subTest(message=message):
                 data = json.loads(base)

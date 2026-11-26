@@ -123,6 +123,9 @@ class DiscoverSkillsTest(unittest.TestCase):
         self.assertEqual(1, len(matches))
         self.assertIn("Run a local strategy backtest.", matches[0]["description"])
         self.assertTrue(any("duplicate skill name" in warning for warning in data["warnings"]))
+        filtered = json.loads(self.discover("--registered", "--json").stdout)
+        self.assertIn("run-backtest", {skill["name"] for skill in filtered["skills"]})
+        self.assertTrue(any("duplicate skill name" in warning for warning in filtered["warnings"]))
 
 
 if __name__ == "__main__":
