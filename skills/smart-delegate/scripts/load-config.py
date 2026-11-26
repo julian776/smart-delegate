@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import sys
+import datetime
 
 BLOCK_START = re.compile(r"^(\s*)(?:-\s+)?[^\s#][^:]*:\s*[|>][+-]?\d*\s*$|^(\s*)-\s*[|>][+-]?\d*\s*$")
 CLI_RE = re.compile(r"(?<![\w./-])(claude|codex|opencode|gemini)(?![\w/-])")
@@ -64,6 +65,16 @@ def main():
             return 0
     print("No Smart Delegate configuration found: route using models and tools available in the environment.")
     return 0
+
+
+def deadline_ok(value):
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
 
 
 def check():
@@ -139,7 +150,7 @@ def check():
             allowed = {
                 "max_delegates": lambda v: isinstance(v, int) and not isinstance(v, bool) and v > 0,
                 "max_correction_cycles": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
-                "deadline": lambda v: isinstance(v, str) and bool(v.strip()),
+                "deadline": deadline_ok,
                 "delivery": lambda v: v in ("merge-ready", "merged"),
                 "auto_merge": lambda v: isinstance(v, bool),
                 "max_model_cost_usd": lambda v: isinstance(v, (int, float))

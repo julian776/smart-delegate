@@ -128,7 +128,7 @@ Three execution profiles, selected by the coordinator without asking the user:
 
 **Acceptance criteria are recorded before implementation.** Each criterion names an observable outcome and its deciding check. The coordinator may amend one when investigation proves an assumption wrong, but only with a justification and independent approval, and the change is recorded. The completion gate rejects an edit made outside that record, so a criterion cannot be silently weakened to make a failing implementation pass.
 
-**Independent evaluation is mandatory.** The Implementer never approves its own work. Reviewer and Verifier are separate responsibilities and separate execution contexts; the gate rejects a reviewer or verifier named as an implementer. Different model families improve independence when risk justifies the cost, but separation matters more than vendor diversity.
+**Independent evaluation is mandatory.** The Implementer never approves its own work. Reviewer and Verifier are separate responsibilities; a straightforward issue may combine them in one independent agent and execution context, but never with the Implementer. The gate rejects a reviewer or verifier named as an implementer. Different model families improve independence when risk justifies the cost, but separation from implementation matters more than vendor diversity.
 
 **State, recovery, and budgets.** One issue's state lives in `.smart-delegate/issues/<id>.json`, written through the coordinator's state script:
 
@@ -325,6 +325,8 @@ The file, every section, and every parameter are optional:
 | `execution.delivery` | `merge-ready` (default) or `merged`; `merged` requires explicit authorization. |
 | `execution.auto_merge` | Boolean; `true` only where merge authorization is explicit. |
 | `execution.max_model_cost_usd` | Optional spend ceiling when the provider reports cost. |
+
+Merging also needs a recorded authorization in issue state (`authorize-merge --by <source>`). Setting `delivery: merged` alone does not authorize it; the gate rejects a merged PR without that record. `max_delegates` bounds concurrent workers, not the total number of assignments, so record launches for reporting and enforce concurrency when dispatching.
 
 All `description` and `invocation` parameters accept single-line or multiline YAML strings. Use `|`
 when line breaks are meaningful and `>` when wrapped lines should be folded into a paragraph. The
@@ -652,9 +654,9 @@ and the skill contracts.
 [SCENARIOS.md](tests/SCENARIOS.md) maps MVP acceptance scenarios A-U to automated coverage or a
 reproducible manual procedure. Real multi-repository pilot results are not reported here: no
 representative external projects were assigned in this environment. The pilot procedure and metrics
-are documented so results can be collected without fabrication. This repository's own MVP work was
-executed as one issue: criteria recorded, tests run, independent review and behavioral verification
-returned against the final revision.
+are documented so results can be collected without fabrication. This repository's MVP work was run
+through the same loop; its gate state and report are runtime artifacts outside the committed tree,
+reproducible with the procedure in SCENARIOS.md.
 
 Known limitations:
 

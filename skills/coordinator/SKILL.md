@@ -4,7 +4,7 @@ description: >
   Coordinate complex work by decomposing it into bounded assignments, delegating independent
   tasks, observing results, adapting when work fails, and synthesizing a verified outcome. Use
   when a request has multiple workstreams, dependencies, or benefits from agent orchestration.
-allowed-tools: Bash(python3 *load-config.py*)
+allowed-tools: Bash(python3 *load-config.py*), Bash(python3 *issue-state.py*), Bash(python3 *discover-skills.py*), Bash(git status:*), Bash(git rev-parse:*), Bash(git worktree:*), Bash(git diff:*), Bash(git log:*), Bash(gh pr:*), Bash(gh run:*)
 ---
 
 # Coordinator
@@ -296,8 +296,9 @@ fails, that is a real defect in the change and the Implementer fixes it. When re
 changes, fix those first and do not verify a revision that was never reviewed.
 
 Feed actionable failures back into the coordination loop, apply in-scope corrections, and rerun only
-affected checks. Stop after two unsuccessful correction cycles and report the evidence. When a
-section is absent or has `enabled: false`, skip it unless the user explicitly requested that stage.
+affected checks. Stop after the configured correction limit (default three) and report the evidence.
+When a section is absent or has `enabled: false`, skip it unless the user explicitly requested that
+stage.
 An explicit request for per-change review or QA takes precedence over these defaults.
 
 For project ownership with final approval reserved to the user, require independent review of each
@@ -355,6 +356,9 @@ approval. Never weaken one to make a failing implementation pass. The gate rejec
 outside the recorded amendment. Do not ask the human to approve criteria when the objective is
 clear.
 
+`criteria.md` is a numbered Markdown list or JSON. Markdown lines are `1. outcome — check: method`;
+JSON entries carry `text` and `check`. Each criterion must name the check that decides it.
+
 ### Pick a profile, run one loop
 
 | Profile | Use for | Typical work |
@@ -411,8 +415,12 @@ check, and never edit unrelated code to make CI green.
 
 Investigate actionable PR feedback. Correct meaningful defects. Decline subjective preferences
 without argument, and escalate genuinely conflicting requirements. Default delivery is a verified,
-green, merge-ready PR. Merge only when the user or configuration explicitly authorizes it. Never
-deploy to production.
+green, merge-ready PR. Merge only when the user or configuration explicitly authorizes it, and
+record that authorization with `authorize-merge --by <source>` before recording a merged state; a
+self-declared `delivery` value does not authorize a merge. When `auto_merge` is true, record
+`authorize-merge --by config:auto_merge` first; it does not skip review, verification, or CI.
+Disabling a required check or PR after it was enabled needs a recorded reason. Never deploy to
+production.
 
 ### State and recovery
 
@@ -422,15 +430,20 @@ attempts, budget, and blockers. On interruption, read `status`, reconcile the br
 continue from the recorded phase. Do not open a duplicate PR, repeat completed implementation, or
 relaunch a worker whose result is already recorded.
 
-Record each delegated assignment, correction cycle, and failed attempt. Record model usage or cost
-only when the provider reports it; otherwise report it as unavailable instead of estimating.
+Run each concurrent issue on its own branch and worktree. Never share a working tree between
+issues, and never discard unrelated user changes. Record each delegated assignment, correction
+cycle, and failed attempt. Record model usage or cost only when the provider reports it; otherwise
+report it as unavailable instead of estimating.
 
 ### Budgets and escalation
 
-Read the `execution` section of the active configuration: `max_delegates` (default 3),
-`max_correction_cycles` (default 3), optional `deadline`, `delivery`, `auto_merge`, and
-`max_model_cost_usd`. Deterministic status commands do not consume the delegate budget. When the
-deadline passes or cycles exceed the limit, stop with a budget blocker instead of continuing.
+Read the `execution` section of the active configuration: `max_delegates` (default 3 concurrent
+delegated workers), `max_correction_cycles` (default 3), optional `deadline`, `delivery`,
+`auto_merge`, and `max_model_cost_usd`. Deterministic status commands do not consume the delegate
+budget. Record a launch with `record delegate` for reporting, but enforce the concurrency limit when
+dispatching. When the deadline passes, cost exceeds its ceiling, or cycles exceed the limit, stop
+with a budget blocker instead of continuing. `max_delegates` is a concurrency bound, not a cap on
+total assignments.
 
 Escalate a model after a failed attempt with a concrete diagnostic, not before. Escalate to the
 human only for: missing credentials or resources, consequential ambiguity the repository cannot

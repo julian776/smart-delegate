@@ -65,5 +65,5 @@ metadata:
 
 ## Reference
 
-- Result fields and tolerances: `references/backtest-results.md`
+- Result fields and API access: `references/backtest-results.md`
 - Dashboard interactions: `references/dashboard.md`

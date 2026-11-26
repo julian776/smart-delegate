@@ -74,6 +74,7 @@ class LoadConfigTest(unittest.TestCase):
             ("delivery: production", "execution.delivery: invalid value"),
             ("auto_merge: sometimes", "execution.auto_merge: invalid value"),
             ("max_model_cost_usd: 0", "execution.max_model_cost_usd: invalid value"),
+            ("deadline: tomorrow", "execution.deadline: invalid value"),
             ("max_agents: 4", "execution.max_agents: unknown key"),
         ]
         for line, message in cases:

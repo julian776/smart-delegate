@@ -49,9 +49,10 @@ def now():
 
 
 def state_path(args):
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", args.issue or ""):
+        raise SystemExit(fail("issue id must match [A-Za-z0-9][A-Za-z0-9._-]*"))
     state_dir = args.state_dir or os.path.join(os.getcwd(), ".smart-delegate", "issues")
-    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", args.issue).strip("-") or "issue"
-    return os.path.join(state_dir, f"{safe}.json")
+    return os.path.join(state_dir, f"{args.issue}.json")
 
 
 def read(args):
@@ -69,8 +70,29 @@ def read(args):
     missing = [key for key in required if key not in state]
     if missing:
         raise SystemExit(fail(f"incomplete state at {path}: missing {', '.join(missing)}"))
+    for key in ("review", "ci", "pr", "budget"):
+        if not isinstance(state[key], dict):
+            raise SystemExit(fail(f"invalid state at {path}: {key} is not a mapping"))
     if not isinstance(state["criteria"], list):
-        raise SystemExit(fail(f"incomplete state at {path}: criteria is not a list"))
+        raise SystemExit(fail(f"invalid state at {path}: criteria is not a list"))
+    for index, item in enumerate(state["criteria"]):
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str) \
+                or not isinstance(item.get("text"), str) or not isinstance(item.get("verdict"), str):
+            raise SystemExit(fail(f"invalid state at {path}: criteria[{index}] is malformed"))
+    for key in ("blocking", "nonblocking", "questions"):
+        if key in state["review"] and not isinstance(state["review"][key], list):
+            raise SystemExit(fail(f"invalid state at {path}: review.{key} is not a list"))
+    for key in ("max_correction_cycles", "correction_cycles", "max_delegates", "delegates"):
+        value = state["budget"].get(key)
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
+            raise SystemExit(fail(f"invalid state at {path}: budget.{key} is not an integer"))
+    for key in ("model_cost_usd", "max_model_cost_usd"):
+        value = state["budget"].get(key)
+        if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool)):
+            raise SystemExit(fail(f"invalid state at {path}: budget.{key} is not a number"))
+    if not isinstance(state.get("implementers", []), list) or not all(
+            isinstance(name, str) for name in state.get("implementers", [])):
+        raise SystemExit(fail(f"invalid state at {path}: implementers is not a list of names"))
     return path, state
 
 
@@ -93,8 +115,9 @@ def event(state, kind, detail=""):
     state.setdefault("events", []).append({"at": now(), "kind": kind, "detail": detail})
 
 
-def text_hash(text):
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+def content_hash(text, check=""):
+    payload = json.dumps([text, check], ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
 
 
 def find_criterion(state, criterion_id):
@@ -115,6 +138,8 @@ def parse_criteria(path):
             data = json.loads(body)
         except ValueError as error:
             raise SystemExit(fail(f"invalid criteria JSON: {error}"))
+        if not isinstance(data, list):
+            raise SystemExit(fail("criteria JSON must be a list of strings or {text, check} objects"))
         items = []
         for entry in data:
             if isinstance(entry, str):
@@ -150,7 +175,7 @@ def add_criteria(state, entries, by):
             "id": criterion_id,
             "text": entry["text"].strip(),
             "check": entry["check"].strip(),
-            "text_sha": text_hash(entry["text"].strip()),
+            "content_sha": content_hash(entry["text"].strip(), entry["check"].strip()),
             "verdict": "PENDING",
             "evidence": "",
             "revision": "",
@@ -173,6 +198,9 @@ def cmd_init(args):
         raise SystemExit(fail(f"state already exists at {path}; resume it or pass --force"))
     if args.deadline:
         check_deadline(args.deadline)
+    implementers = [name.strip() for name in args.implementer.split(",") if name.strip()]
+    if not implementers:
+        raise SystemExit(fail("--implementer needs at least one name"))
     state = {
         "schema": SCHEMA,
         "id": args.issue,
@@ -181,12 +209,16 @@ def cmd_init(args):
         "profile": args.profile,
         "phase": "intake",
         "revision": args.revision or "",
-        "implementers": [name.strip() for name in args.implementer.split(",") if name.strip()],
+        "implementers": implementers,
         "criteria": [],
         "review": {"verdict": "none", "revision": "", "reviewer": "",
                    "blocking": [], "nonblocking": [], "questions": []},
-        "ci": {"required": args.ci_required, "status": "unknown", "revision": "", "detail": ""},
-        "pr": {"required": args.pr_required, "url": "", "state": "", "delivery": args.delivery},
+        "ci": {"required": args.ci_required, "status": "unknown", "revision": "",
+               "detail": "", "required_reason": ""},
+        "pr": {"required": args.pr_required, "url": "", "state": "",
+               "delivery": args.delivery, "required_reason": "",
+               "merge_authorized": args.merge_authorized,
+               "merge_authorized_by": "init" if args.merge_authorized else ""},
         "budget": {
             "max_correction_cycles": args.max_correction_cycles,
             "max_delegates": args.max_delegates,
@@ -206,21 +238,6 @@ def cmd_init(args):
     event(state, "init", f"objective: {args.objective}")
     write(path, state)
     print(f"created {path}")
-    return 0
-
-
-def cmd_actor(args):
-    path, state = read(args)
-    names = [name.strip() for name in args.name.split(",") if name.strip()]
-    if args.role == "implementer":
-        state["implementers"] = names
-    elif args.role == "reviewer":
-        state["review"]["reviewer"] = names[0] if names else ""
-    else:
-        raise SystemExit(fail(f"unknown actor role {args.role}"))
-    event(state, "actor", f"{args.role}: {', '.join(names)}")
-    write(path, state)
-    print(f"{args.role}: {', '.join(names)}")
     return 0
 
 
@@ -324,7 +341,7 @@ def cmd_criteria_amend(args):
         item["check"] = args.check.strip()
     if item["text"] == before_text and item["check"] == before_check:
         raise SystemExit(fail("amendment changes nothing"))
-    item["text_sha"] = text_hash(item["text"])
+    item["content_sha"] = content_hash(item["text"], item["check"])
     item.setdefault("amendments", []).append({
         "at": now(),
         "from_text": before_text,
@@ -375,14 +392,19 @@ def cmd_ci(args):
         raise SystemExit(fail("status must be green, failing, pending, or unknown"))
     required = state["ci"].get("required", True)
     if args.required is not None:
+        if args.required is False and required is True and not (args.reason or "").strip():
+            raise SystemExit(fail("disabling required CI needs --reason"))
         required = args.required
     state["ci"] = {
         "required": required,
         "status": status,
         "revision": args.revision or state.get("revision", ""),
         "detail": args.detail or "",
+        "required_reason": (args.reason or state["ci"].get("required_reason", ""))
+        if not required else "",
     }
-    event(state, "ci", f"{status} at {state['ci']['revision'] or '(no revision)'}")
+    event(state, "ci", f"{status} at {state['ci']['revision'] or '(no revision)'}"
+                       + (f"; required={required} reason={args.reason}" if args.reason else ""))
     write(path, state)
     print(f"ci: {status}")
     return 0
@@ -392,16 +414,34 @@ def cmd_pr(args):
     path, state = read(args)
     if args.state not in PR_STATES:
         raise SystemExit(fail(f"state must be one of {', '.join(PR_STATES)}"))
+    required = state["pr"].get("required", True)
+    if args.required is not None:
+        if args.required is False and required is True and not (args.reason or "").strip():
+            raise SystemExit(fail("disabling the required PR needs --reason"))
+        required = args.required
     state["pr"].update({
         "url": args.url or state["pr"].get("url", ""),
         "state": args.state,
         "delivery": args.delivery or state["pr"].get("delivery", "merge-ready"),
+        "required": required,
+        "required_reason": (args.reason or state["pr"].get("required_reason", ""))
+        if not required else "",
     })
-    if args.required is not None:
-        state["pr"]["required"] = args.required
     event(state, "pr", f"{args.state} {state['pr']['url']}".strip())
     write(path, state)
     print(f"pr: {args.state}")
+    return 0
+
+
+def cmd_authorize_merge(args):
+    path, state = read(args)
+    if not (args.by or "").strip():
+        raise SystemExit(fail("authorize-merge needs --by"))
+    state["pr"]["merge_authorized"] = True
+    state["pr"]["merge_authorized_by"] = args.by.strip()
+    event(state, "merge-authorized", args.by.strip())
+    write(path, state)
+    print(f"merge authorized by {args.by.strip()}")
     return 0
 
 
@@ -493,6 +533,10 @@ def budget_exhausted(state):
     maximum = int(budget.get("max_correction_cycles", 3))
     if cycles > maximum:
         return f"correction cycles {cycles} exceed maximum {maximum}"
+    cost = budget.get("model_cost_usd")
+    ceiling = budget.get("max_model_cost_usd")
+    if cost is not None and ceiling is not None and float(cost) > float(ceiling):
+        return f"model cost ${cost} exceeds ceiling ${ceiling}"
     return ""
 
 
@@ -506,25 +550,31 @@ def evaluate(state):
 
     if not criteria:
         reasons.append("no acceptance criteria recorded")
+    if not implementers:
+        reasons.append("implementer not recorded; independence unproven")
     for item in criteria:
-        if text_hash(item.get("text", "")) != item.get("text_sha"):
-            reasons.append(f"{item['id']} text changed without a recorded amendment")
+        if content_hash(item.get("text", ""), item.get("check", "")) != item.get("content_sha"):
+            reasons.append(f"{item['id']} content changed without a recorded amendment")
         if not item.get("check"):
             reasons.append(f"{item['id']} has no deciding check")
         if item.get("verdict") != "PASS":
             reasons.append(f"{item['id']} is {item.get('verdict', 'PENDING')}")
-            continue
-        if not item.get("evidence"):
+        elif not item.get("evidence"):
             reasons.append(f"{item['id']} PASS has no evidence")
-        if not item.get("revision") or item["revision"] != revision:
+        elif not item.get("revision") or item["revision"] != revision:
             reasons.append(f"{item['id']} evidence is not for revision {revision or '(none)'}")
-        if not item.get("verified_by"):
+        elif not item.get("verified_by"):
             reasons.append(f"{item['id']} PASS has no verifier")
-        elif implementers and item["verified_by"] in implementers:
+        elif item["verified_by"] in implementers:
             reasons.append(f"{item['id']} was verified by its implementer")
         for amendment in item.get("amendments", []):
-            if not amendment.get("justification") or not amendment.get("approved_by"):
+            approved = amendment.get("approved_by") or []
+            if isinstance(approved, str):
+                approved = [approved]
+            if not amendment.get("justification") or not approved:
                 reasons.append(f"{item['id']} has an unjustified amendment")
+            elif not [name for name in approved if name not in implementers]:
+                reasons.append(f"{item['id']} amendment lacks independent approval")
 
     review = state.get("review", {})
     if review.get("verdict") != "approve":
@@ -552,8 +602,8 @@ def evaluate(state):
             reasons.append("PR url missing")
         if pr.get("state") not in ("ready", "merged"):
             reasons.append(f"PR state is {pr.get('state') or 'none'}; must be ready or merged")
-    if pr.get("state") == "merged" and pr.get("delivery") != "merged":
-        reasons.append("PR merged without authorized delivery policy")
+    if pr.get("state") == "merged" and not pr.get("merge_authorized"):
+        reasons.append("PR merged without recorded merge authorization")
 
     exhausted = budget_exhausted(state)
     if exhausted:
@@ -563,8 +613,6 @@ def evaluate(state):
         reasons.append(f"blocker recorded: {state['blocker'].get('problem', '')}")
     if not revision:
         reasons.append("no implementation revision recorded")
-    if not implementers:
-        warnings.append("implementer not recorded; independence cannot be checked")
     return not reasons, reasons, warnings
 
 
@@ -671,14 +719,32 @@ def render_report(state):
     return "\n".join(lines) + "\n"
 
 
+def atomic_write_text(path, body):
+    directory = os.path.dirname(os.path.abspath(path))
+    try:
+        os.makedirs(directory, exist_ok=True)
+        handle, tmp = tempfile.mkstemp(dir=directory, prefix=".report-", suffix=".md")
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as out:
+                out.write(body)
+                out.flush()
+                os.fsync(out.fileno())
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, path)
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
+    except OSError as error:
+        raise SystemExit(fail(f"cannot write report {path}: {error}"))
+
+
 def cmd_report(args):
     path, state = read(args)
     body = render_report(state)
     print(body, end="")
     if args.write:
         report_path = path[: -len(".json")] + ".md"
-        with open(report_path, "w", encoding="utf-8") as handle:
-            handle.write(body)
+        atomic_write_text(report_path, body)
         print(f"wrote {report_path}", file=sys.stderr)
     return 0
 
@@ -694,22 +760,20 @@ def build_parser():
     init.add_argument("--repo")
     init.add_argument("--profile", choices=PROFILES, default="standard")
     init.add_argument("--revision", default="")
-    init.add_argument("--implementer", default="", help="implementer name(s), comma separated")
+    init.add_argument("--implementer", required=True,
+                      help="implementer name(s), comma separated; never the reviewer or verifier")
     init.add_argument("--criteria", help="criteria JSON or Markdown list")
     init.add_argument("--ci-required", action=argparse.BooleanOptionalAction, default=True)
     init.add_argument("--pr-required", action=argparse.BooleanOptionalAction, default=True)
     init.add_argument("--delivery", choices=("merge-ready", "merged"), default="merge-ready")
+    init.add_argument("--merge-authorized", action=argparse.BooleanOptionalAction, default=False,
+                      help="record explicit human or config authorization to merge")
     init.add_argument("--max-correction-cycles", type=int, default=3)
     init.add_argument("--max-delegates", type=int, default=3)
     init.add_argument("--max-model-cost-usd", type=float, default=None)
     init.add_argument("--deadline")
     init.add_argument("--force", action="store_true")
     init.set_defaults(func=cmd_init)
-
-    actor = sub.add_parser("actor", help="record an implementation or review actor")
-    actor.add_argument("--role", required=True, choices=("implementer", "reviewer"))
-    actor.add_argument("--name", required=True)
-    actor.set_defaults(func=cmd_actor)
 
     phase = sub.add_parser("set-phase", help="set the execution phase")
     phase.add_argument("phase", choices=PHASES)
@@ -758,6 +822,7 @@ def build_parser():
     ci.add_argument("--revision", default="")
     ci.add_argument("--detail", default="")
     ci.add_argument("--required", action=argparse.BooleanOptionalAction, default=None)
+    ci.add_argument("--reason", help="required when disabling a previously required check")
     ci.set_defaults(func=cmd_ci)
 
     pr = sub.add_parser("pr", help="record pull request state and delivery policy")
@@ -765,7 +830,12 @@ def build_parser():
     pr.add_argument("--state", required=True, choices=PR_STATES)
     pr.add_argument("--delivery", choices=("merge-ready", "merged"))
     pr.add_argument("--required", action=argparse.BooleanOptionalAction, default=None)
+    pr.add_argument("--reason", help="required when disabling a previously required PR")
     pr.set_defaults(func=cmd_pr)
+
+    authorize = sub.add_parser("authorize-merge", help="record explicit merge authorization")
+    authorize.add_argument("--by", required=True, help="human, config key, or policy that authorized it")
+    authorize.set_defaults(func=cmd_authorize_merge)
 
     budget = sub.add_parser("budget", help="read or update execution limits")
     budget.add_argument("--max-correction-cycles", type=int)
@@ -793,7 +863,9 @@ def build_parser():
     block.set_defaults(func=cmd_block)
 
     unblock = sub.add_parser("unblock", help="clear a blocker and resume")
-    unblock.add_argument("--phase", choices=PHASES, default="implement")
+    unblock.add_argument("--phase", choices=(
+        "intake", "discovery", "criteria", "implement", "review", "verify", "pr", "ci"),
+        default="implement")
     unblock.set_defaults(func=cmd_unblock)
 
     gate = sub.add_parser("gate", help="check completion evidence")

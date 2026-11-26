@@ -14,8 +14,8 @@ python3 -m unittest discover -s tests
 | C tests pass, behavior wrong | automated proxy | `test_not_verified_is_not_pass`; manual below |
 | D CI failure recovered | manual | procedure below |
 | E genuine blocker | automated | `test_blocker_report_and_exit_code` |
-| F interrupted execution resumes | automated plus manual | `test_duplicate_init_refused_without_force`, `test_report_write_and_recovery_status` |
-| G resource exhaustion | automated | `test_budget_exhaustion_terminates`, `test_deadline_exhaustion_terminates` |
+| F interrupted execution resumes | automated plus manual | `test_duplicate_init_refused_without_force`, `test_report_write_and_recovery_status`; reconcile-and-resume below |
+| G resource exhaustion | automated | `test_budget_exhaustion_terminates`, `test_deadline_exhaustion_terminates`, `test_cost_ceiling_blocks_completion` |
 | H criteria manipulation | automated | `test_criterion_cannot_be_weakened_without_approval`, `test_unrecorded_criterion_edit_is_detected` |
 | I lightweight task | automated | `test_lightweight_issue_can_skip_ci_and_pr` |
 | J no existing project skill | manual | setup procedure below |

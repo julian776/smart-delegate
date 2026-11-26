@@ -11,6 +11,9 @@
 __pycache__/
 *.py[cod]
 
+# Local issue execution state and evidence (may contain logs or captured responses)
+/.smart-delegate/issues/
+
 # A stray local CLAUDE.md must not become a second source of guidance
 CLAUDE.md
 

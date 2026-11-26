@@ -33,16 +33,6 @@ def unquote(value):
     return value
 
 
-def split_frontmatter(text):
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None, "missing frontmatter"
-    for index in range(1, len(lines)):
-        if lines[index].strip() in ("---", "..."):
-            return "\n".join(lines[1:index]), ""
-    return None, "unterminated frontmatter"
-
-
 def parse_yaml_subset(text):
     """Parse the small mapping subset skills use: scalars, nested maps, `|` and `>` blocks."""
     root = {}
@@ -105,18 +95,30 @@ def as_text(value):
     return str(value)
 
 
+def read_frontmatter(path):
+    """Read only up to the closing delimiter; the skill body is never loaded."""
+    with open(path, encoding="utf-8") as handle:
+        first = handle.readline()
+        if first.strip() != "---":
+            return None, "missing frontmatter"
+        lines = []
+        for line in handle:
+            if line.strip() in ("---", "..."):
+                return "\n".join(lines), ""
+            lines.append(line.rstrip("\n"))
+    return None, "unterminated frontmatter"
+
+
 def read_skill(path):
     name = os.path.basename(os.path.dirname(path))
     warnings = []
     try:
-        with open(path, encoding="utf-8") as handle:
-            text = handle.read()
+        frontmatter, problem = read_frontmatter(path)
     except (OSError, UnicodeDecodeError) as error:
         return {
             "name": name, "description": "", "type": [], "capabilities": [],
             "location": path, "registered": False, "warnings": [f"unreadable: {error}"],
         }
-    frontmatter, problem = split_frontmatter(text)
     if frontmatter is None:
         warnings.append(problem)
         return {
@@ -215,7 +217,18 @@ def skill_files(roots):
 
 def catalog(project, extra, registered_only=False, wanted_types=None):
     roots = discover_roots(project, extra)
-    skills = [read_skill(path) for path in skill_files(roots)]
+    skills = []
+    seen = {}
+    for path in skill_files(roots):
+        skill = read_skill(path)
+        key = skill["name"].lower()
+        if key in seen:
+            kept = seen[key]
+            kept["warnings"].append(
+                f"duplicate skill name; ignoring {skill['location']} (using {kept['location']})")
+            continue
+        seen[key] = skill
+        skills.append(skill)
     if registered_only:
         skills = [skill for skill in skills if skill["registered"]]
     if wanted_types:

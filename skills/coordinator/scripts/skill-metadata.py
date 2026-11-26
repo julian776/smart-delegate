@@ -17,6 +17,7 @@ import importlib.util
 import os
 import re
 import sys
+import tempfile
 
 KEYS = ("smart-delegate", "smart-delegate-type", "smart-delegate-capabilities")
 KEY_RE = re.compile(r"^(?P<indent>\s+)(?P<key>smart-delegate(?:-type|-capabilities)?)\s*:\s*(?P<value>.*?)\s*$")
@@ -101,6 +102,10 @@ def register_text(text, args):
         raise ValueError("frontmatter needs a description")
     wanted = desired_values(args)
     bounds = metadata_bounds(front)
+    if bounds is not None:
+        existing = current_values(front, bounds)
+        if all(existing.get(key) == wanted[key] for key in KEYS):
+            return text
     if bounds is None:
         front = front + ["metadata:\n"] + [render_line("  ", key, wanted[key]) for key in KEYS]
     else:
@@ -156,8 +161,19 @@ def cmd_register(args):
         sys.stdout.writelines(diff)
         return 0
     try:
-        with open(args.path, "w", encoding="utf-8", newline="") as handle:
-            handle.write(updated)
+        mode = os.stat(args.path).st_mode & 0o777
+        directory = os.path.dirname(os.path.abspath(args.path))
+        handle, tmp = tempfile.mkstemp(dir=directory, prefix=".skill-", suffix=".md")
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8", newline="") as out:
+                out.write(updated)
+                out.flush()
+                os.fsync(out.fileno())
+            os.chmod(tmp, mode)
+            os.replace(tmp, args.path)
+        finally:
+            if os.path.exists(tmp):
+                os.unlink(tmp)
     except OSError as error:
         print(f"FAIL {args.path}: {error}", file=sys.stderr)
         return 2

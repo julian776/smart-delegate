@@ -15,19 +15,21 @@ SKILLS = ROOT / "skills"
 EXAMPLES = ROOT / "examples"
 
 
-def clean_env(home):
+def clean_env(home, extra=None):
     env = dict(os.environ)
     env["HOME"] = str(home)
     env["SMART_DELEGATE_SKILL_PATHS"] = ""
     env.pop("XDG_CONFIG_HOME", None)
+    if extra:
+        env.update({str(key): str(value) for key, value in extra.items()})
     return env
 
 
-def run(args, cwd, home, timeout=60):
+def run(args, cwd, home, timeout=60, env_extra=None):
     return subprocess.run(
         [sys.executable, *map(str, args)],
         cwd=str(cwd),
-        env=clean_env(home),
+        env=clean_env(home, env_extra),
         capture_output=True,
         text=True,
         timeout=timeout,

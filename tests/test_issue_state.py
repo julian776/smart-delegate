@@ -106,7 +106,77 @@ class IssueStateTest(unittest.TestCase):
         data["criteria"][2]["text"] = "Anything is acceptable"
         path.write_text(json.dumps(data))
         result = self.state("gate", expect=1)
-        self.assertIn("text changed without a recorded amendment", result.stdout)
+        self.assertIn("content changed without a recorded amendment", result.stdout)
+
+    def test_unrecorded_check_edit_is_detected(self):
+        self.init()
+        self.complete_evidence()
+        path = self.state_dir / "PAY-142.json"
+        data = json.loads(path.read_text())
+        data["criteria"][2]["check"] = "tester says it works"
+        path.write_text(json.dumps(data))
+        result = self.state("gate", expect=1)
+        self.assertIn("content changed without a recorded amendment", result.stdout)
+
+    def test_amendment_approval_must_be_independent(self):
+        self.init()
+        path = self.state_dir / "PAY-142.json"
+        data = json.loads(path.read_text())
+        data["criteria"][0]["amendments"] = [{
+            "at": "now", "from_text": "Export action visible", "to_text": "Export action visible",
+            "from_check": "browser shows Export", "to_check": "browser shows Export",
+            "justification": "trust me", "approved_by": ["impl-a"],
+        }]
+        path.write_text(json.dumps(data))
+        result = self.state("gate", expect=1)
+        self.assertIn("amendment lacks independent approval", result.stdout)
+
+    def test_implementer_is_required(self):
+        result = self.state("init", "--objective", "no owner", expect=2)
+        self.assertIn("--implementer", result.stderr)
+
+    def test_cost_ceiling_blocks_completion(self):
+        self.init("--max-model-cost-usd", "5")
+        self.complete_evidence()
+        self.state("budget", "--model-cost-usd", "500")
+        result = self.state("gate", expect=4)
+        self.assertIn("model cost $500.0 exceeds ceiling $5.0", result.stdout)
+
+    def test_merge_requires_recorded_authorization(self):
+        self.init()
+        self.complete_evidence()
+        self.state("pr", "--state", "merged")
+        result = self.state("gate", expect=1)
+        self.assertIn("PR merged without recorded merge authorization", result.stdout)
+        self.state("authorize-merge", "--by", "user request")
+        self.state("gate")
+
+    def test_malformed_nested_state_is_readable(self):
+        self.init()
+        path = self.state_dir / "PAY-142.json"
+        data = json.loads(path.read_text())
+        data["ci"] = "green"
+        path.write_text(json.dumps(data))
+        result = self.state("gate", expect=2)
+        self.assertIn("ci is not a mapping", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_unsafe_issue_id_is_refused(self):
+        result = run([ISSUE_STATE, "--issue", "PAY 142", "status"], self.project, self.home)
+        self.assertEqual(2, result.returncode)
+        self.assertIn("issue id must match", result.stderr)
+
+    def test_disabling_required_ci_needs_reason(self):
+        self.init()
+        result = self.state("ci", "--status", "failing", "--no-required", expect=2)
+        self.assertIn("needs --reason", result.stderr)
+        self.state("ci", "--status", "failing", "--no-required", "--reason", "docs-only commit")
+
+    def test_criteria_json_must_be_a_list(self):
+        bad = write(self.project / "bad.json", json.dumps({"text": "one"}))
+        result = self.state("init", "--objective", "bad", "--implementer", "impl-a",
+                            "--criteria", bad, expect=2)
+        self.assertIn("must be a list", result.stderr)
 
     def test_blocking_review_finding_blocks_completion(self):
         self.init()

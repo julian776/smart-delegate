@@ -4,8 +4,9 @@ Used by `create-operation-skill` and `create-verification-skill`. Both skills ge
 adapt project skills. The difference is what the generated skill teaches, not how it is delivered.
 
 Path base: the Smart Delegate checkout or installed skill tree. Scripts live in
-`../coordinator/scripts/` relative to this file. Resolve them from the coordinator skill directory
-when the install layout differs.
+`../../coordinator/scripts/` relative to this reference file, or `../coordinator/scripts/` relative
+to either setup skill directory. Resolve them from the coordinator skill directory when the install
+layout differs.
 
 ## 1. Understand the request
 

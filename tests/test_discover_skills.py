@@ -102,10 +102,27 @@ class DiscoverSkillsTest(unittest.TestCase):
             "zeta", "Extra skill.",
             {"smart-delegate": "true", "smart-delegate-type": "verification",
              "smart-delegate-capabilities": "api"}))
-        result = run([DISCOVER, "--project", self.root / "empty", "--path", extra, "--json"],
+        empty = self.root / "empty"
+        empty.mkdir()
+        result = run([DISCOVER, "--project", empty, "--path", extra, "--json"],
                      self.root, self.home)
         data = json.loads(result.stdout)
         self.assertIn("zeta", {skill["name"] for skill in data["skills"]})
+        result = run([DISCOVER, "--project", empty, "--json"], self.root, self.home,
+                     env_extra={"SMART_DELEGATE_SKILL_PATHS": extra})
+        data = json.loads(result.stdout)
+        self.assertIn("zeta", {skill["name"] for skill in data["skills"]})
+
+    def test_project_skill_shadows_duplicate_name(self):
+        write(self.home / ".agents" / "skills" / "alpha" / "SKILL.md", skill_text(
+            "run-backtest", "User copy.",
+            {"smart-delegate": "true", "smart-delegate-type": "operation",
+             "smart-delegate-capabilities": "old"}))
+        data = json.loads(self.discover("--json").stdout)
+        matches = [skill for skill in data["skills"] if skill["name"] == "run-backtest"]
+        self.assertEqual(1, len(matches))
+        self.assertIn("Run a local strategy backtest.", matches[0]["description"])
+        self.assertTrue(any("duplicate skill name" in warning for warning in data["warnings"]))
 
 
 if __name__ == "__main__":
