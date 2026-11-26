@@ -9,8 +9,8 @@ Lookup order (first file found wins, no merging):
 Only full-line comments are removed. Lines inside block scalars (`|` or `>`) are kept verbatim,
 including lines that start with `#`. Standard library only.
 
-Run with `--check` to validate the active configuration (YAML syntax, model titles, CLI
-availability) and print a PASS/WARN report.
+Run with `--check` to validate the active configuration (YAML syntax, model titles, execution
+limits, CLI availability) and print a PASS/WARN report.
 """
 import os
 import re
@@ -129,6 +129,34 @@ def check():
             value = section.get("invocation")
             if isinstance(value, str):
                 invocations.append(value)
+
+    execution = data.get("execution")
+    if execution is not None:
+        if not isinstance(execution, dict):
+            print("WARN execution: not a mapping")
+            warnings += 1
+        else:
+            allowed = {
+                "max_delegates": lambda v: isinstance(v, int) and not isinstance(v, bool) and v > 0,
+                "max_correction_cycles": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
+                "deadline": lambda v: isinstance(v, str) and bool(v.strip()),
+                "delivery": lambda v: v in ("merge-ready", "merged"),
+                "auto_merge": lambda v: isinstance(v, bool),
+                "max_model_cost_usd": lambda v: isinstance(v, (int, float))
+                and not isinstance(v, bool) and v > 0,
+            }
+            execution_ok = True
+            for key, value in execution.items():
+                if key not in allowed:
+                    print(f"WARN execution.{key}: unknown key")
+                    warnings += 1
+                    execution_ok = False
+                elif not allowed[key](value):
+                    print(f"WARN execution.{key}: invalid value {value!r}")
+                    warnings += 1
+                    execution_ok = False
+            if execution_ok:
+                print(f"PASS execution: {len(execution)} setting(s)")
 
     sources = {}
     for source in invocations:

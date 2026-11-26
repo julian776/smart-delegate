@@ -1,6 +1,6 @@
 {
   "name": "julian776-smart-delegate",
-  "description": "Provider-agnostic model routing and coordinated multi-agent delegation.",
+  "description": "Provider-agnostic model routing, coordinated multi-agent delegation, and autonomous issue execution with independent verification.",
   "owner": {
     "name": "julian776"
   },
@@ -8,7 +8,7 @@
     {
       "name": "smart-delegate",
       "source": "./",
-      "description": "Provider-agnostic model routing and coordinated multi-agent delegation."
+      "description": "Provider-agnostic model routing, coordinated multi-agent delegation, and autonomous issue execution with independent verification."
     }
   ]
 }
